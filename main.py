@@ -31,15 +31,27 @@ async def setup(bot, db):
     from program.ticket import Ticket
     from program.help import Help
     from program.ai import AIChat
+    from program.currency.coin import Coin
+    from program.currency.casino import Casino
     from program.coin.bank import Bank
     from program.coin.bonus import Bonus
+    from program.currency.trade import Trade
+    from program.currency.steal import Steal
+    from program.top import Top
+    from program.profile import Profile
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Help(bot))
     await bot.add_cog(AIChat(bot))
+    await bot.add_cog(Coin(bot, db))
+    await bot.add_cog(Casino(bot, db))
     await bot.add_cog(Bank(bot))
     await bot.add_cog(Bonus(bot, db))
+    await bot.add_cog(Trade(bot, db))
+    await bot.add_cog(Steal(bot, db))
+    await bot.add_cog(Top(bot, db))
+    await bot.add_cog(Profile(bot, db))
   
 try:
     from keep_alive import keep_alive
