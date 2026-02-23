@@ -31,11 +31,13 @@ async def setup(bot, db):
     from program.ticket import Ticket
     from program.help import Help
     from program.ai import AIChat
+    from program.coin.bank import Bank
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Help(bot))
     await bot.add_cog(AIChat(bot))
+    await bot.add_cog(Bank(bot))
   
 try:
     from keep_alive import keep_alive
