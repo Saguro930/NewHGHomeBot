@@ -12,6 +12,8 @@ TOKEN = os.environ.get("DISCORD_TOKEN")  # Render環境変数
 
 intents = discord.Intents.default()
 intents.message_content = True
+intents.members = True 
+intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
