@@ -31,12 +31,12 @@ async def setup(bot, db):
     from program.ticket import Ticket
     from program.help import Help
     from program.ai import AIChat
-    from program.currency.coin import Coin
-    from program.currency.casino import Casino
+    from program.coin.coin import Coin
+    from program.coin.casino import Casino
     from program.coin.bank import Bank
     from program.coin.bonus import Bonus
-    from program.currency.trade import Trade
-    from program.currency.steal import Steal
+    from program.coin.trade import Trade
+    from program.coin.steal import Steal
     from program.top import Top
     from program.profile import Profile
 
