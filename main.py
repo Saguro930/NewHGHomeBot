@@ -41,6 +41,7 @@ async def setup(bot, db):
     from program.profile import Profile
     from program.xp import XP
     from program.count import Count
+    from program.welcome import Welcome
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -56,6 +57,7 @@ async def setup(bot, db):
     await bot.add_cog(Profile(bot, db))
     await bot.add_cog(XP(bot, db))
     await bot.add_cog(Count(bot, db))
+    await bot.add_cog(Welcome(bot, db))
 try:
     from keep_alive import keep_alive
     keep_alive()
