@@ -1,0 +1,257 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGHome公式サイト</title>
+
+<style>
+:root{
+    --black:#0f0f0f;
+    --dark:#1a1a1a;
+    --gray:#2a2a2a;
+    --light:#eaeaea;
+    --accent:#2f81f7;
+}
+
+*{
+    margin:0;
+    padding:0;
+    box-sizing:border-box;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;
+}
+
+html{ scroll-behavior:smooth; }
+
+body{
+    background:var(--black);
+    color:var(--light);
+}
+
+/* ===== ナビ ===== */
+nav{
+    position:fixed;
+    top:0;
+    width:100%;
+    height:70px;
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    padding:0 60px;
+    background:rgba(15,15,15,0.9);
+    border-bottom:1px solid var(--gray);
+    backdrop-filter: blur(6px);
+    z-index:1000;
+}
+
+nav h1{
+    font-size:20px;
+    font-weight:600;
+}
+
+nav a{
+    color:var(--light);
+    text-decoration:none;
+    margin-left:30px;
+    position:relative;
+    transition:0.3s;
+}
+
+nav a::after{
+    content:"";
+    position:absolute;
+    bottom:-6px;
+    left:0;
+    width:0%;
+    height:2px;
+    background:var(--accent);
+    transition:0.3s;
+}
+
+nav a:hover{
+    color:var(--accent);
+}
+
+nav a:hover::after{
+    width:100%;
+}
+
+/* ===== セクション ===== */
+section{
+    min-height:100vh;
+    padding:140px 12% 100px;
+    scroll-margin-top:90px;
+}
+
+h2{
+    font-size:36px;
+    margin-bottom:10px;
+    font-weight:600;
+    border-left:4px solid var(--accent);
+    padding-left:15px;
+}
+
+.section-desc{
+    color:#b5b5b5;
+    margin-bottom:40px;
+    font-size:15px;
+}
+
+/* ===== カード ===== */
+.card{
+    background:linear-gradient(180deg,#1a1a1a,#141414);
+    border:1px solid var(--gray);
+    padding:26px;
+    border-radius:14px;
+    margin-bottom:22px;
+    transition:0.3s;
+    box-shadow:0 0 0 rgba(0,0,0,0);
+}
+
+.card:hover{
+    border-color:var(--accent);
+    transform:translateY(-6px);
+    box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+
+/* ===== ボタン ===== */
+.btn{
+    display:inline-block;
+    margin-top:18px;
+    padding:12px 26px;
+    border-radius:8px;
+    text-decoration:none;
+    background:var(--accent);
+    color:white;
+    font-weight:500;
+    transition:0.3s;
+}
+
+.btn:hover{
+    opacity:0.85;
+}
+
+/* ===== アプデリスト ===== */
+.update-list{
+    list-style:none;
+    margin-top:15px;
+}
+
+.update-list li{
+    margin-bottom:10px;
+    padding-left:18px;
+    position:relative;
+    color:#d6d6d6;
+}
+
+.update-list li::before{
+    content:"•";
+    position:absolute;
+    left:0;
+    color:var(--accent);
+}
+
+/* ===== コマンド ===== */
+.command-grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+    gap:22px;
+}
+
+/* ===== フッター ===== */
+footer{
+    text-align:center;
+    padding:40px;
+    background:var(--dark);
+    border-top:1px solid var(--gray);
+    color:#aaa;
+}
+</style>
+</head>
+
+<body>
+
+<nav>
+    <h1>HGHomeBot+</h1>
+    <div>
+        <a href="#home">ホーム</a>
+        <a href="#roadmap">ロードマップ</a>
+        <a href="#commands">コマンド</a>
+        <a href="#other">その他</a>
+    </div>
+</nav>
+
+<section id="home">
+    <h2>Bot紹介 & アップデート</h2>
+    <p class="section-desc">深夜テンションで作った…</p>
+
+    <div class="card">
+        <h3>ちょっと多機能な管理 & カジノBot</h3>
+        <p>ProBotのXP有料化をきっかけにXP機能が追加</p>
+        <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
+    </div>
+
+    <div class="card">
+        <strong>v0.2</strong>
+        <ul class="update-list">
+            <li>Botが起動しない問題を修正</li>
+            <li>XPレベリング機能を実装</li>
+            <li>コイン・カジノ機能を追加</li>
+            <li>Monthlyボーナスを追加</li>
+            <li>窃盗成功率を上方修正</li>
+        </ul>
+    </div>
+
+    <div class="card">
+        <strong>v0.1</strong>
+        <ul class="update-list">
+            <li>Youtube検索機能</li>
+            <li>ロール付与・タイムアウト</li>
+            <li>チケット・ヘルプ機能</li>
+        </ul>
+    </div>
+</section>
+
+<section id="roadmap">
+    <h2>ロードマップ</h2>
+    <p class="section-desc">今後の開発予定</p>
+
+    <div class="card">Webダッシュボード実装</div>
+    <div class="card">UI / UX 改善</div>
+    <div class="card">Youtube検索復活</div>
+</section>
+
+<section id="commands">
+    <h2>コマンド一覧</h2>
+    <p class="section-desc">管理・カジノ・レベリング</p>
+
+    <div class="command-grid">
+        <div class="card"><strong>/help</strong><br>ヘルプを表示</div>
+        <div class="card"><strong>/timeout</strong><br>ユーザーをタイムアウト</div>
+        <div class="card"><strong>@HGHomeBot+</strong><br>AIに質問</div>
+
+        <div class="card"><strong>/work</strong><br>働いてコイン獲得</div>
+        <div class="card"><strong>/steal</strong><br>他ユーザーから盗む</div>
+        <div class="card"><strong>/profile</strong><br>所持コイン確認</div>
+
+        <div class="card"><strong>/top</strong><br>資産ランキング</div>
+        <div class="card"><strong>/rank</strong><br>レベル表示</div>
+        <div class="card"><strong>/leaderboard</strong><br>XPランキング</div>
+    </div>
+</section>
+
+<section id="other">
+    <h2>その他</h2>
+    <p class="section-desc">連絡先・外部リンク</p>
+
+    <div class="card"><strong>製作者</strong><br>Sou930（Discord DM）</div>
+    <div class="card"><strong>GitHub</strong><br>そのうちちゃんと整えます</div>
+</section>
+
+<footer>
+© 2026 HGHome Official
+</footer>
+
+</body>
+</html>
