@@ -2,24 +2,16 @@ import os
 import discord
 from discord.ext import commands
 import asyncio
+import threading
 
-# Firebase
 from data.firebase_init import init_firebase
 db = init_firebase()
 
-# Flask 起動
-try:
-    from keep_alive import keep_alive
-    keep_alive()
-except ImportError:
-    pass
-
-# 諸設定等
-TOKEN = os.environ.get("DISCORD_TOKEN")  # Render環境変数
+TOKEN = os.environ.get("DISCORD_TOKEN")
 
 intents = discord.Intents.default()
 intents.message_content = True
-intents.members = True 
+intents.members = True
 intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
@@ -32,7 +24,6 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Sync error: {e}")
 
-# Cog登録
 async def setup(bot, db):
     from program.admin.admin import Admin
     from program.ticket import Ticket
@@ -49,7 +40,6 @@ async def setup(bot, db):
     from program.xp import XP
     from program.count import Count
     from program.welcome import Welcome
-
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Help(bot))
@@ -66,10 +56,22 @@ async def setup(bot, db):
     await bot.add_cog(Count(bot, db))
     await bot.add_cog(Welcome(bot, db))
 
-# Bot起動
-async def main():
+async def run_bot():
     await setup(bot, db)
     await bot.start(TOKEN)
 
+def start_bot():
+    """Discord Bot を別スレッドの asyncio ループで起動"""
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    loop.run_until_complete(run_bot())
+
 if __name__ == "__main__":
-    asyncio.run(main())
+    # ① Bot を別スレッドで起動
+    bot_thread = threading.Thread(target=start_bot, daemon=True)
+    bot_thread.start()
+
+    # ② Flask をメインスレッドで起動（Render はここでポートを検出）
+    from keep_alive import app
+    port = int(os.environ.get("PORT", 10000))
+    app.run(host="0.0.0.0", port=port)
