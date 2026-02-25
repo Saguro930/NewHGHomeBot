@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>SNS</title>
+</head>
+<body>
+
+<h2>Mini SNS</h2>
+
+<input id="name" placeholder="名前"><br>
+<textarea id="text" placeholder="いまどうしてる？"></textarea><br>
+<button onclick="post()">投稿</button>
+
+<hr>
+<div id="timeline"></div>
+
+<script>
+let replyTo = null;
+
+async function post() {
+  const name = nameInput.value;
+  const text = textInput.value;
+  if (!name || !text) return;
+
+  await fetch("/api/sns/post", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ name, text, reply_to: replyTo })
+  });
+
+  textInput.value = "";
+  replyTo = null;
+  load();
+}
+
+async function like(id) {
+  await fetch("/api/sns/like", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({ post_id: id })
+  });
+  load();
+}
+
+async function load() {
+  const res = await fetch("/api/sns/timeline");
+  const data = await res.json();
+
+  timeline.innerHTML = "";
+
+  data.filter(p => !p.reply_to).forEach(p => {
+    const div = document.createElement("div");
+    div.innerHTML = `
+      <b>${p.name}</b><br>
+      ${p.text}<br>
+      ❤️ ${p.likes}
+      <button onclick="like('${p.id}')">いいね</button>
+      <button onclick="reply('${p.id}')">リプ</button>
+      <div id="r-${p.id}" style="margin-left:20px"></div>
+      <hr>
+    `;
+    timeline.appendChild(div);
+
+    data.filter(r => r.reply_to === p.id).forEach(r => {
+      const rd = document.createElement("div");
+      rd.innerHTML = `<b>${r.name}</b> ${r.text}`;
+      div.querySelector(`#r-${p.id}`).appendChild(rd);
+    });
+  });
+}
+
+function reply(id) {
+  replyTo = id;
+  textInput.focus();
+}
+
+const nameInput = document.getElementById("name");
+const textInput = document.getElementById("text");
+const timeline = document.getElementById("timeline");
+
+load();
+setInterval(load, 5000);
+</script>
+
+</body>
+</html>
