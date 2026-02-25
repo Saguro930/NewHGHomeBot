@@ -1,27 +1,3 @@
-"""
-sns.py  ―  Mini SNS routes (Flask + Firestore + Discord OAuth)
-
-必要パッケージ:
-    pip install authlib requests
-
-環境変数 (.env など):
-    DISCORD_CLIENT_ID      ← Discord Developer Portal で取得
-    DISCORD_CLIENT_SECRET  ← 同上
-    SECRET_KEY             ← 任意の長いランダム文字列
-    OAUTHLIB_INSECURE_TRANSPORT=1  ← ローカル開発時のみ (http許可)
-
-Discord Developer Portal での設定:
-    https://discord.com/developers/applications
-    → アプリを選択 → OAuth2 → Redirects に追加:
-        http://localhost:5000/auth/callback   (開発)
-        https://yourdomain.com/auth/callback  (本番)
-
-Cookie の挙動:
-    - ログイン情報は署名付き Cookie に保存 (Flask session)
-    - SESSION_COOKIE_AGE: 30日間 (ブラウザを閉じても維持)
-    - 本番環境では SESSION_COOKIE_SECURE=True にすること (HTTPS必須)
-"""
-
 import os
 from datetime import timedelta
 from functools import wraps
@@ -88,13 +64,13 @@ def register_sns_routes(app, db):
     # 静的ファイル配信
     # =========================================================================
 
-    @app.route("/")
-    def index():
-        return send_from_directory(".", "sns.html")
-
-    @app.route("/sns.css")
+    BASE_DIR = os.path.dirname(__file__)
+    @app.route("/sns")
+    def index():  
+        return send_from_directory(BASE_DIR, "sns.html")
+    @app.route("/sns/sns.css")
     def serve_css():
-        return send_from_directory(".", "sns.css")
+        return send_from_directory(BASE_DIR, "sns.css")
 
     # =========================================================================
     # 認証 (Discord OAuth)
