@@ -22,7 +22,7 @@ class Welcome(commands.Cog):
 
         await ctx.reply(
             f"✅ ようこそ・さようならメッセージを\n"
-            f"{ctx.channel.mention} に設定したで！"
+            f"{ctx.channel.mention} に設定しました"
         )
 
     # -----------------------------
