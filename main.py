@@ -7,6 +7,13 @@ import asyncio
 from data.firebase_init import init_firebase
 db = init_firebase()
 
+# Flask 起動
+try:
+    from keep_alive import keep_alive
+    keep_alive()
+except ImportError:
+    pass
+
 # 諸設定等
 TOKEN = os.environ.get("DISCORD_TOKEN")  # Render環境変数
 
@@ -58,11 +65,6 @@ async def setup(bot, db):
     await bot.add_cog(XP(bot, db))
     await bot.add_cog(Count(bot, db))
     await bot.add_cog(Welcome(bot, db))
-try:
-    from keep_alive import keep_alive
-    keep_alive()
-except ImportError:
-    pass
 
 # Bot起動
 async def main():
