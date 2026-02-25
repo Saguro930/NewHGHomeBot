@@ -1,3 +1,5 @@
+print("🔥 main.py start")
+
 import os
 import discord
 from discord.ext import commands
@@ -14,8 +16,6 @@ intents.message_content = True
 intents.members = True
 intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
-
-print("🔥 main.py start")
 
 @bot.event
 async def on_ready():
