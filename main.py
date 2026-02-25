@@ -15,6 +15,8 @@ intents.members = True
 intents.guilds = True
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+print("🔥 main.py start")
+
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
