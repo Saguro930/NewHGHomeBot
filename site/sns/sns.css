@@ -89,13 +89,13 @@ body {
   line-height: 1.6;
 }
 
-.btn-google {
+.btn-discord {
   display: flex;
   align-items: center;
   justify-content: center;
   gap: 12px;
-  background: var(--text);
-  color: #0f1419;
+  background: #5865f2;
+  color: #fff;
   border: none;
   border-radius: var(--radius-pill);
   padding: 14px 24px;
@@ -104,11 +104,11 @@ body {
   font-family: var(--font);
   cursor: pointer;
   text-decoration: none;
-  transition: opacity 0.15s;
+  transition: background 0.15s;
   width: 100%;
 }
-.btn-google:hover { opacity: 0.9; }
-.btn-google svg { width: 20px; height: 20px; flex-shrink: 0; }
+.btn-discord:hover { background: #4752c4; }
+.btn-discord svg { width: 22px; height: 22px; flex-shrink: 0; }
 
 .login-terms {
   font-size: 12px;
