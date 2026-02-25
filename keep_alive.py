@@ -10,10 +10,10 @@ db = init_firebase()
 
 @app.route("/")
 def home():
-    return send_from_directory("site", "index.html")
+    return send_from_directory("web", "index.html")
 
-@app.route("/site/<path:filename>")
+@app.route("/web/<path:filename>")
 def site_files(filename):
-    return send_from_directory("site", filename)
+    return send_from_directory("web", filename)
 
 register_sns_routes(app, db)
