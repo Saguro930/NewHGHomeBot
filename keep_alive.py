@@ -1,21 +1,11 @@
 from flask import Flask, send_from_directory
-import threading
 import os
-
-# Firebase
 from data.firebase_init import init_firebase
-
-# SNS API
 from sns.sns import register_sns_routes
 
 app = Flask(__name__)
-
-# Firebase 初期化
 db = init_firebase()
 
-# --------------------
-# 静的ファイル
-# --------------------
 @app.route("/")
 def home():
     return send_from_directory("site", "index.html")
@@ -24,17 +14,11 @@ def home():
 def site_files(filename):
     return send_from_directory("site", filename)
 
-# --------------------
-# SNS API 登録
-# --------------------
 register_sns_routes(app, db)
 
-# --------------------
-# Flask 起動
-# --------------------
-def run():
-    port = int(os.environ.get("PORT", 10000))
-    app.run(host="0.0.0.0", port=port)
-
+# keep_alive() は main.py から直接 app.run() するので不要
+# 互換性のために残す場合:
 def keep_alive():
-    threading.Thread(target=run, daemon=True).start()
+    import threading
+    port = int(os.environ.get("PORT", 10000))
+    threading.Thread(target=lambda: app.run(host="0.0.0.0", port=port), daemon=True).start()
