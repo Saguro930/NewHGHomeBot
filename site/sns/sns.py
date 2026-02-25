@@ -8,6 +8,7 @@ from flask import (
 from google.cloud.firestore_v1 import SERVER_TIMESTAMP, Increment
 from authlib.integrations.flask_client import OAuth
 
+print("🔥 sns.py imported")
 
 # ---------------------------------------------------------------------------
 # ヘルパー
