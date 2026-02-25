@@ -3,450 +3,49 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>HGSNS</title>
+<title>Mini SNS</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700&display=swap" rel="stylesheet">
-<style>
-  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-
-  :root {
-    --bg: #000000;
-    --bg2: #16181c;
-    --border: #2f3336;
-    --text: #e7e9ea;
-    --text-sub: #71767b;
-    --accent: #1d9bf0;
-    --accent-hover: #1a8cd8;
-    --like: #f91880;
-    --like-bg: rgba(249,24,128,0.1);
-    --reply-color: #1d9bf0;
-    --reply-bg: rgba(29,155,240,0.1);
-    --retweet-color: #00ba7c;
-    --hover-bg: rgba(255,255,255,0.03);
-    --font: 'Noto Sans JP', -apple-system, sans-serif;
-  }
-
-  body {
-    background: var(--bg);
-    color: var(--text);
-    font-family: var(--font);
-    min-height: 100vh;
-  }
-
-  .wrapper {
-    display: flex;
-    max-width: 1265px;
-    margin: 0 auto;
-    min-height: 100vh;
-  }
-
-  /* ── Left sidebar ── */
-  .sidebar {
-    width: 275px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    padding: 0 12px;
-    flex-shrink: 0;
-    display: flex;
-    flex-direction: column;
-  }
-  .sidebar-logo {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 50px; height: 50px;
-    border-radius: 50%;
-    margin: 4px 0 4px -4px;
-    cursor: pointer;
-    transition: background 0.2s;
-  }
-  .sidebar-logo:hover { background: rgba(239,243,244,0.1); }
-  .sidebar-logo svg { width: 28px; height: 28px; fill: var(--text); }
-  .sidebar-nav { display: flex; flex-direction: column; gap: 4px; margin-top: 4px; }
-  .nav-item {
-    display: flex;
-    align-items: center;
-    gap: 20px;
-    padding: 12px 16px;
-    border-radius: 9999px;
-    cursor: pointer;
-    transition: background 0.2s;
-    color: var(--text);
-    font-size: 20px;
-    font-weight: 400;
-    width: fit-content;
-  }
-  .nav-item:hover { background: var(--hover-bg); }
-  .nav-item.active { font-weight: 700; }
-  .nav-icon { width: 26px; height: 26px; }
-  .tweet-btn {
-    margin-top: 16px;
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 9999px;
-    padding: 16px;
-    font-size: 17px;
-    font-weight: 700;
-    cursor: pointer;
-    width: 230px;
-    transition: background 0.15s;
-    font-family: var(--font);
-  }
-  .tweet-btn:hover { background: var(--accent-hover); }
-
-  /* ── Main column ── */
-  .main {
-    flex: 1;
-    min-width: 0;
-    max-width: 600px;
-    border-left: 1px solid var(--border);
-    border-right: 1px solid var(--border);
-  }
-  .col-header {
-    position: sticky;
-    top: 0;
-    z-index: 10;
-    background: rgba(0,0,0,0.85);
-    backdrop-filter: blur(12px);
-    border-bottom: 1px solid var(--border);
-    padding: 0 16px;
-    height: 53px;
-    display: flex;
-    align-items: center;
-  }
-  .col-header-title { font-size: 20px; font-weight: 700; }
-
-  /* ── Reply banner ── */
-  .reply-banner {
-    display: none;
-    align-items: center;
-    gap: 8px;
-    padding: 10px 16px 6px 68px;
-    font-size: 13px;
-    color: var(--text-sub);
-    background: rgba(29,155,240,0.05);
-    border-bottom: 1px solid var(--border);
-  }
-  .reply-banner.visible { display: flex; }
-  .reply-to-name { color: var(--accent); font-weight: 700; }
-  .cancel-reply {
-    margin-left: auto;
-    cursor: pointer;
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    transition: background 0.15s;
-    color: var(--text-sub);
-    font-size: 16px;
-  }
-  .cancel-reply:hover { background: rgba(255,255,255,0.06); color: var(--text); }
-
-  /* ── Compose ── */
-  .compose {
-    padding: 12px 16px;
-    border-bottom: 8px solid var(--bg2);
-    display: flex;
-    gap: 12px;
-  }
-  .compose-avatar {
-    flex-shrink: 0;
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    background: var(--bg2);
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 17px; color: #fff;
-    user-select: none;
-  }
-  .compose-right { flex: 1; display: flex; flex-direction: column; }
-  #name {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--accent);
-    font-family: var(--font);
-    font-size: 14px;
-    font-weight: 700;
-    width: 100%;
-    margin-bottom: 2px;
-    caret-color: var(--accent);
-  }
-  #name::placeholder { color: var(--text-sub); font-weight: 400; }
-  #text {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-family: var(--font);
-    font-size: 20px;
-    line-height: 1.55;
-    resize: none;
-    width: 100%;
-    min-height: 80px;
-    caret-color: var(--accent);
-  }
-  #text::placeholder { color: var(--text-sub); }
-  .compose-toolbar {
-    display: flex;
-    align-items: center;
-    padding-top: 12px;
-    border-top: 1px solid var(--border);
-    margin-top: 12px;
-    gap: 4px;
-  }
-  .toolbar-icon {
-    width: 36px; height: 36px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .toolbar-icon:hover { background: rgba(29,155,240,0.1); }
-  .toolbar-icon svg { width: 18px; height: 18px; fill: var(--accent); }
-  .char-count {
-    margin-left: auto;
-    font-size: 14px;
-    color: var(--text-sub);
-    font-variant-numeric: tabular-nums;
-    min-width: 24px;
-    text-align: right;
-  }
-  .char-count.warn { color: #ffd400; }
-  .char-count.over { color: var(--like); }
-  .post-btn {
-    background: var(--accent);
-    color: #fff;
-    border: none;
-    border-radius: 9999px;
-    padding: 8px 20px;
-    font-size: 15px;
-    font-weight: 700;
-    cursor: pointer;
-    margin-left: 12px;
-    transition: background 0.15s, opacity 0.15s;
-    font-family: var(--font);
-    white-space: nowrap;
-  }
-  .post-btn:disabled { opacity: 0.5; cursor: default; }
-  .post-btn:not(:disabled):hover { background: var(--accent-hover); }
-
-  /* ── Tabs ── */
-  .tabs { display: flex; border-bottom: 1px solid var(--border); }
-  .tab {
-    flex: 1;
-    text-align: center;
-    padding: 16px 0 14px;
-    font-size: 15px;
-    font-weight: 500;
-    color: var(--text-sub);
-    cursor: pointer;
-    position: relative;
-    transition: background 0.15s;
-  }
-  .tab:hover { background: var(--hover-bg); }
-  .tab.active { font-weight: 700; color: var(--text); }
-  .tab.active::after {
-    content: '';
-    position: absolute;
-    bottom: 0; left: 50%;
-    transform: translateX(-50%);
-    width: 56px; height: 4px;
-    background: var(--accent);
-    border-radius: 9999px;
-  }
-
-  /* ── Timeline ── */
-  #timeline { display: flex; flex-direction: column; }
-
-  /* ── Tweet card ── */
-  .tweet {
-    display: flex;
-    gap: 12px;
-    padding: 12px 16px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-    animation: fadeIn 0.2s ease both;
-    cursor: pointer;
-  }
-  .tweet:hover { background: var(--hover-bg); }
-  @keyframes fadeIn { from { opacity:0; transform:translateY(6px); } to { opacity:1; transform:none; } }
-
-  .tweet-avatar {
-    flex-shrink: 0;
-    width: 40px; height: 40px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 17px; color: #fff;
-    user-select: none;
-  }
-  .tweet-body { flex: 1; min-width: 0; }
-  .tweet-header {
-    display: flex;
-    align-items: baseline;
-    gap: 6px;
-    flex-wrap: wrap;
-    margin-bottom: 2px;
-  }
-  .tweet-name { font-weight: 700; font-size: 15px; color: var(--text); }
-  .tweet-handle { font-size: 15px; color: var(--text-sub); }
-  .tweet-text {
-    font-size: 15px;
-    line-height: 1.65;
-    color: var(--text);
-    word-break: break-word;
-    white-space: pre-wrap;
-    margin-bottom: 10px;
-  }
-
-  /* ── Action bar ── */
-  .tweet-actions {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    max-width: 425px;
-    margin: 0 -8px;
-  }
-  .action-group {
-    border-radius: 9999px;
-    transition: background 0.15s;
-  }
-  .action-group:hover { background: var(--reply-bg); }
-  .action-group.like:hover { background: var(--like-bg); }
-  .action-group.rt:hover { background: rgba(0,186,124,0.1); }
-  .action-btn {
-    display: flex;
-    align-items: center;
-    gap: 4px;
-    background: transparent;
-    border: none;
-    padding: 7px 8px;
-    border-radius: 9999px;
-    cursor: pointer;
-    color: var(--text-sub);
-    font-size: 13px;
-    font-family: var(--font);
-    transition: color 0.15s;
-    line-height: 1;
-  }
-  .action-btn svg { width: 18px; height: 18px; fill: currentColor; }
-  .action-group:hover .action-btn { color: var(--reply-color); }
-  .action-group.like:hover .action-btn { color: var(--like); }
-  .action-group.rt:hover .action-btn { color: var(--retweet-color); }
-  .action-group.like.liked .action-btn { color: var(--like); }
-  .action-count { font-variant-numeric: tabular-nums; }
-
-  /* ── Replies ── */
-  .replies-section { border-bottom: 1px solid var(--border); }
-  .reply-tweet {
-    display: flex;
-    gap: 12px;
-    padding: 10px 16px 10px 68px;
-    border-bottom: 1px solid var(--border);
-    transition: background 0.15s;
-    animation: fadeIn 0.2s ease both;
-    cursor: pointer;
-  }
-  .reply-tweet:last-child { border-bottom: none; }
-  .reply-tweet:hover { background: var(--hover-bg); }
-  .reply-avatar {
-    flex-shrink: 0;
-    width: 32px; height: 32px;
-    border-radius: 50%;
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; font-size: 13px; color: #fff;
-  }
-  .reply-body { flex: 1; min-width: 0; }
-  .reply-header { display: flex; align-items: baseline; gap: 6px; flex-wrap: wrap; margin-bottom: 2px; }
-  .reply-name { font-weight: 700; font-size: 14px; color: var(--text); }
-  .reply-handle { font-size: 14px; color: var(--text-sub); }
-  .reply-text { font-size: 14px; line-height: 1.6; color: var(--text); word-break: break-word; }
-
-  /* ── Empty state ── */
-  .empty-state {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 64px 32px;
-    gap: 12px;
-    color: var(--text-sub);
-    text-align: center;
-  }
-  .empty-state svg { width: 42px; height: 42px; fill: var(--text-sub); opacity: 0.3; margin-bottom: 8px; }
-  .empty-state strong { font-size: 31px; font-weight: 800; color: var(--text); display: block; }
-  .empty-state p { font-size: 15px; }
-
-  /* ── Right sidebar ── */
-  .right-sidebar {
-    width: 348px;
-    flex-shrink: 0;
-    padding: 0 16px;
-    position: sticky;
-    top: 0;
-    height: 100vh;
-    overflow-y: auto;
-  }
-  .right-sidebar::-webkit-scrollbar { display: none; }
-  .search-bar { position: sticky; top: 0; padding: 12px 0; background: var(--bg); z-index: 5; }
-  .search-input-wrap {
-    background: var(--bg2);
-    border: 1px solid transparent;
-    border-radius: 9999px;
-    display: flex;
-    align-items: center;
-    padding: 10px 16px;
-    gap: 12px;
-    transition: border-color 0.15s, background 0.15s;
-  }
-  .search-input-wrap:focus-within { background: var(--bg); border-color: var(--accent); }
-  .search-input-wrap svg { width: 18px; height: 18px; fill: var(--text-sub); flex-shrink: 0; }
-  .search-input-wrap input {
-    background: transparent;
-    border: none;
-    outline: none;
-    color: var(--text);
-    font-size: 15px;
-    font-family: var(--font);
-    width: 100%;
-  }
-  .search-input-wrap input::placeholder { color: var(--text-sub); }
-  .widget-box {
-    background: var(--bg2);
-    border-radius: 16px;
-    padding: 12px 0 4px;
-    margin-top: 16px;
-    overflow: hidden;
-  }
-  .widget-title { font-size: 20px; font-weight: 800; padding: 0 16px 12px; }
-  .trend-item {
-    padding: 10px 16px;
-    cursor: pointer;
-    transition: background 0.15s;
-  }
-  .trend-item:hover { background: var(--hover-bg); }
-  .trend-cat { font-size: 13px; color: var(--text-sub); }
-  .trend-name { font-size: 15px; font-weight: 700; }
-  .trend-count { font-size: 13px; color: var(--text-sub); margin-top: 2px; }
-
-  /* ── Responsive ── */
-  @media (max-width: 1200px) { .right-sidebar { display: none; } }
-  @media (max-width: 700px) {
-    .sidebar { display: none; }
-    .main { max-width: 100%; border: none; }
-  }
-</style>
+<link rel="stylesheet" href="/sns.css">
 </head>
 <body>
 
-<div class="wrapper">
+<!-- ================================================================
+     LOGIN SCREEN
+     ================================================================ -->
+<div id="loginScreen">
+  <div class="login-logo">
+    <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+  </div>
+  <div class="login-card">
+    <div class="login-title">いまどうしてる？</div>
+    <p class="login-sub">Googleアカウントでログインして、タイムラインへ参加しましょう。</p>
+    <a href="/auth/login" class="btn-google">
+      <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
+        <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
+        <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+        <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+        <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+      </svg>
+      Googleでログイン
+    </a>
+    <p class="login-terms">
+      ログインすることで、このサービスの利用規約およびプライバシーポリシーに同意したものとみなされます。
+    </p>
+  </div>
+</div>
+
+<!-- ================================================================
+     APP SCREEN
+     ================================================================ -->
+<div id="appScreen">
 
   <!-- Left Sidebar -->
   <aside class="sidebar">
     <div class="sidebar-logo">
       <svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
     </div>
-    <nav class="sidebar-nav">
+    <nav style="display:flex;flex-direction:column;gap:4px;margin-top:4px;">
       <div class="nav-item active">
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M12 1.696L.622 8.807l1.06 1.696L3 9.679V19.5C3 20.881 4.119 22 5.5 22h4a1 1 0 001-1v-6h3v6a1 1 0 001 1h4c1.381 0 2.5-1.119 2.5-2.5V9.679l1.318.824 1.06-1.696L12 1.696z"/></svg>
         <span>ホーム</span>
@@ -455,12 +54,24 @@
         <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.814 5.262l4.276 4.276-1.414 1.414-4.276-4.276A8.456 8.456 0 0110.25 18.75c-4.694 0-8.5-3.806-8.5-8.5z"/></svg>
         <span>話題を検索</span>
       </div>
-      <div class="nav-item">
-        <svg class="nav-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M19.993 9.042C19.48 5.017 16.054 2 11.996 2s-7.49 3.021-7.999 7.051L2.866 18H7.1c.463 2.282 2.481 4 4.9 4s4.437-1.718 4.9-4h4.236l-1.143-8.958zM12 20c-1.316 0-2.434-.847-2.849-2h5.698c-.415 1.153-1.533 2-2.849 2zm-6.866-4l.847-6.698C6.389 6.016 8.952 4 11.996 4s5.607 2.016 6.013 5.295L18.864 16H5.134z"/></svg>
-        <span>通知</span>
-      </div>
     </nav>
-    <button class="tweet-btn" onclick="scrollToCompose()">投稿する</button>
+
+    <div class="sidebar-spacer"></div>
+
+    <!-- User profile -->
+    <div class="sidebar-profile" id="sidebarProfile" onclick="toggleProfilePopup()">
+      <img class="sidebar-profile-avatar" id="sidebarAvatar" src="" alt="avatar">
+      <div class="sidebar-profile-info">
+        <div class="sidebar-profile-name"  id="sidebarName"></div>
+        <div class="sidebar-profile-email" id="sidebarEmail"></div>
+      </div>
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="var(--text-sub)" style="flex-shrink:0"><path d="M3 12c0-1.1.9-2 2-2s2 .9 2 2-.9 2-2 2-2-.9-2-2zm9 2c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2zm7 0c1.1 0 2-.9 2-2s-.9-2-2-2-2 .9-2 2 .9 2 2 2z"/></svg>
+      <div class="profile-popup" id="profilePopup">
+        <div class="popup-item logout" onclick="logout(event)">
+          @<span id="popupHandle"></span> からログアウト
+        </div>
+      </div>
+    </div>
   </aside>
 
   <!-- Main Column -->
@@ -471,14 +82,14 @@
 
     <div class="reply-banner" id="replyBanner">
       <svg width="16" height="16" viewBox="0 0 24 24" fill="var(--accent)"><path d="M14.046 2.242l-4.148-.01h-.002c-4.374 0-7.8 3.427-7.8 7.802 0 4.098 3.186 7.206 7.465 7.37v3.828c0 .108.044.286.12.403.142.225.384.347.632.347.138 0 .277-.038.402-.118.264-.168 6.473-4.14 8.088-5.506 1.902-1.61 3.04-3.97 3.043-6.312v-.017c-.006-4.367-3.43-7.787-7.8-7.788zm3.787 12.972c-1.134.96-4.862 3.405-6.772 4.643V16.67c0-.414-.335-.75-.75-.75h-.396c-3.66 0-6.318-2.476-6.318-5.886 0-3.534 2.768-6.302 6.3-6.302l4.147.01h.002c3.532 0 6.3 2.766 6.302 6.296-.003 1.91-.942 3.844-2.515 5.176z"/></svg>
-      返信先: <span class="reply-to-name" id="replyToName"></span>
-      <span class="cancel-reply" onclick="cancelReply()">✕</span>
+      返信先:&nbsp;<span class="reply-to-name" id="replyToName"></span>
+      <span class="cancel-reply" onclick="cancelReply()" title="キャンセル">✕</span>
     </div>
 
     <div class="compose" id="composeBox">
-      <div class="compose-avatar" id="composeAvatarEl">?</div>
+      <img class="compose-avatar" id="composeAvatar" src="" alt="avatar">
       <div class="compose-right">
-        <input id="name" placeholder="名前を入力" autocomplete="off" oninput="updateComposeAvatar()">
+        <div class="compose-name" id="composeName"></div>
         <textarea id="text" placeholder="いまどうしてる？" rows="3" oninput="updateCharCount()"></textarea>
         <div class="compose-toolbar">
           <div class="toolbar-icon" title="画像">
@@ -494,8 +105,8 @@
     </div>
 
     <div class="tabs">
-      <div class="tab active">おすすめ</div>
-      <div class="tab">フォロー中</div>
+      <div class="tab active" onclick="switchTab(this,'all')">おすすめ</div>
+      <div class="tab"        onclick="switchTab(this,'mine')">自分の投稿</div>
     </div>
 
     <div id="timeline">
@@ -511,15 +122,18 @@
     <div class="search-bar">
       <div class="search-input-wrap">
         <svg viewBox="0 0 24 24"><path d="M10.25 3.75c-3.59 0-6.5 2.91-6.5 6.5s2.91 6.5 6.5 6.5c1.795 0 3.419-.726 4.596-1.904 1.178-1.177 1.904-2.801 1.904-4.596 0-3.59-2.91-6.5-6.5-6.5zm-8.5 6.5c0-4.694 3.806-8.5 8.5-8.5s8.5 3.806 8.5 8.5c0 1.986-.682 3.815-1.814 5.262l4.276 4.276-1.414 1.414-4.276-4.276A8.456 8.456 0 0110.25 18.75c-4.694 0-8.5-3.806-8.5-8.5z"/></svg>
-        <input type="text" placeholder="検索">
+        <input type="text" placeholder="検索" id="searchInput" oninput="renderTimeline()">
       </div>
     </div>
     <div class="widget-box">
       <div class="widget-title">いまどうなってる</div>
       <div class="trend-item">
-        <div class="trend-cat"未定</div>
-        <div class="trend-name">製作途中</div>
-        <div class="trend-count">114,514件のポスト</div>
+        <div class="trend-cat">ポスト数</div>
+        <div class="trend-name" id="trendPostCount">―</div>
+      </div>
+      <div class="trend-item">
+        <div class="trend-cat">参加メンバー</div>
+        <div class="trend-name" id="trendUsers">―</div>
       </div>
     </div>
   </aside>
@@ -527,185 +141,246 @@
 </div>
 
 <script>
-  const MAX_CHARS = 280;
-  let replyTo = null;
-  let replyToName = '';
+/* ── State ── */
+const MAX_CHARS  = 280;
+let currentUser  = null;
+let replyTo      = null;
+let allPosts     = [];
+let currentTab   = 'all';
 
-  const COLORS = [
-    ['#1d9bf0','#1a56b0'], ['#f91880','#b5116e'], ['#00ba7c','#008c5e'],
-    ['#ff7a00','#cc6000'], ['#7856ff','#5534cc'], ['#00c4d3','#009aa6'],
-  ];
-  function nameGradient(name) {
-    let h = 0;
-    for (const c of name) h = (h * 31 + c.charCodeAt(0)) & 0xffff;
-    return COLORS[h % COLORS.length];
-  }
-  function avatarStyle(name) {
-    const [c1, c2] = nameGradient(name);
-    return `background:linear-gradient(135deg,${c1},${c2})`;
-  }
-  function initial(name) { return name ? name.charAt(0).toUpperCase() : '?'; }
-  function esc(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
-  }
-  function handle(name) { return '@' + name.toLowerCase().replace(/\s+/g,'_'); }
+/* ── Auth ── */
+async function initAuth() {
+  try {
+    const res  = await fetch('/auth/me');
+    const user = await res.json();
+    if (user && user.id) { currentUser = user; showApp(); }
+    else                  { showLogin(); }
+  } catch { showLogin(); }
+}
 
-  // ── Compose ──
-  function updateComposeAvatar() {
-    const n = nameInput.value.trim();
-    const el = document.getElementById('composeAvatarEl');
-    if (n) { el.setAttribute('style', avatarStyle(n)); el.textContent = initial(n); }
-    else    { el.removeAttribute('style'); el.textContent = '?'; }
-  }
-  function updateCharCount() {
-    const len = textInput.value.length;
-    const el = document.getElementById('charCount');
-    const rem = MAX_CHARS - len;
-    if (len === 0) { el.textContent = ''; document.getElementById('postBtn').disabled = false; return; }
-    el.textContent = rem;
-    el.className = 'char-count' + (rem < 0 ? ' over' : rem < 20 ? ' warn' : '');
-    document.getElementById('postBtn').disabled = rem < 0;
-  }
-  function scrollToCompose() {
-    document.getElementById('composeBox').scrollIntoView({ behavior: 'smooth', block: 'center' });
-    textInput.focus();
-  }
+function showLogin() {
+  document.getElementById('loginScreen').classList.add('visible');
+  document.getElementById('appScreen').classList.remove('visible');
+}
 
-  // ── Reply ──
-  function replyClick(id, name, e) {
-    e.stopPropagation();
-    replyTo = id;
-    replyToName = name;
-    document.getElementById('replyToName').textContent = handle(name);
-    document.getElementById('replyBanner').classList.add('visible');
-    textInput.focus();
-    document.getElementById('composeBox').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
-  }
-  function cancelReply() {
-    replyTo = null;
-    replyToName = '';
-    document.getElementById('replyBanner').classList.remove('visible');
-    document.getElementById('replyToName').textContent = '';
-  }
+function showApp() {
+  document.getElementById('loginScreen').classList.remove('visible');
+  document.getElementById('appScreen').classList.add('visible');
+  const u = currentUser;
+  const h = u.name.toLowerCase().replace(/\s+/g,'_');
+  document.getElementById('sidebarAvatar').src       = u.picture || '';
+  document.getElementById('sidebarName').textContent  = u.name;
+  document.getElementById('sidebarEmail').textContent = u.email;
+  document.getElementById('popupHandle').textContent  = h;
+  document.getElementById('composeAvatar').src        = u.picture || '';
+  document.getElementById('composeName').textContent  = u.name;
+  load();
+}
 
-  // ── Post ──
-  async function post() {
-    const name = nameInput.value.trim();
-    const text = textInput.value.trim();
-    if (!name || !text || text.length > MAX_CHARS) return;
-    const btn = document.getElementById('postBtn');
-    btn.disabled = true; btn.textContent = '投稿中…';
-    try {
-      await fetch("/api/sns/post", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, text, reply_to: replyTo })
-      });
-      textInput.value = '';
-      updateCharCount();
-      cancelReply();
-      await load();
-    } catch(e) {}
-    btn.textContent = '投稿する';
-    btn.disabled = false;
-  }
+function toggleProfilePopup() {
+  document.getElementById('profilePopup').classList.toggle('open');
+}
+function logout(e) {
+  e.stopPropagation();
+  window.location.href = '/auth/logout';
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('#sidebarProfile'))
+    document.getElementById('profilePopup').classList.remove('open');
+});
 
-  // ── Like ──
-  async function like(id, e) {
-    e.stopPropagation();
-    await fetch("/api/sns/like", {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ post_id: id })
+/* ── Compose ── */
+function updateCharCount() {
+  const len = textInput.value.length;
+  const rem = MAX_CHARS - len;
+  const el  = document.getElementById('charCount');
+  el.textContent = len > 0 ? rem : '';
+  el.className   = 'char-count' + (rem < 0 ? ' over' : rem < 20 ? ' warn' : '');
+  document.getElementById('postBtn').disabled = len === 0 || rem < 0;
+}
+
+/* ── Reply ── */
+function replyClick(id, name, e) {
+  e.stopPropagation();
+  replyTo = id;
+  document.getElementById('replyToName').textContent = '@' + hnd(name);
+  document.getElementById('replyBanner').classList.add('visible');
+  textInput.focus();
+  document.getElementById('composeBox').scrollIntoView({ behavior:'smooth', block:'nearest' });
+}
+function cancelReply() {
+  replyTo = null;
+  document.getElementById('replyBanner').classList.remove('visible');
+  document.getElementById('replyToName').textContent = '';
+}
+
+/* ── Tabs ── */
+function switchTab(el, tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  el.classList.add('active');
+  currentTab = tab;
+  renderTimeline();
+}
+
+/* ── API ── */
+async function post() {
+  const text = textInput.value.trim();
+  if (!text || text.length > MAX_CHARS) return;
+  const btn = document.getElementById('postBtn');
+  btn.disabled = true; btn.textContent = '投稿中…';
+  try {
+    const res = await fetch('/api/sns/post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text, reply_to: replyTo }),
     });
-    load();
-  }
+    if (res.status === 401) { showLogin(); return; }
+    textInput.value = '';
+    updateCharCount();
+    cancelReply();
+    await load();
+  } catch {}
+  btn.textContent = '投稿する'; btn.disabled = false;
+}
 
-  // ── Build HTML ──
-  function buildRepliesHTML(replies) {
-    return replies.map(r => `
-      <div class="reply-tweet">
-        <div class="reply-avatar" style="${avatarStyle(r.name)}">${esc(initial(r.name))}</div>
-        <div class="reply-body">
-          <div class="reply-header">
-            <span class="reply-name">${esc(r.name)}</span>
-            <span class="reply-handle">${esc(handle(r.name))}</span>
-          </div>
-          <div class="reply-text">${esc(r.text)}</div>
+async function like(id, e) {
+  e.stopPropagation();
+  const res = await fetch('/api/sns/like', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ post_id: id }),
+  });
+  if (res.status === 401) { showLogin(); return; }
+  await load();
+}
+
+async function deletePost(id, e) {
+  e.stopPropagation();
+  if (!confirm('この投稿を削除しますか？\n（リプライもすべて削除されます）')) return;
+  const res = await fetch('/api/sns/delete/' + id, { method: 'DELETE' });
+  if (res.status === 401) { showLogin(); return; }
+  await load();
+}
+
+async function load() {
+  try {
+    const res = await fetch('/api/sns/timeline');
+    if (res.status === 401) { showLogin(); return; }
+    allPosts = await res.json();
+    updateStats();
+    renderTimeline();
+  } catch {
+    if (!timeline.querySelector('.tweet'))
+      timeline.innerHTML = emptyHTML('接続エラー', 'サーバーに接続できません');
+  }
+}
+
+/* ── Helpers ── */
+function hnd(name) { return name.toLowerCase().replace(/\s+/g,'_'); }
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;')
+                  .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function avatarImg(pic, name, cls, size) {
+  const style = `width:${size}px;height:${size}px;border-radius:50%;flex-shrink:0;`;
+  if (pic) return `<img class="${cls}" src="${esc(pic)}" alt="${esc(name)}" style="${style}object-fit:cover" onerror="this.style.display='none'">`;
+  return `<div class="${cls}" style="${style}display:flex;align-items:center;justify-content:center;background:#2f3336;font-weight:700;font-size:${Math.floor(size*0.4)}px;color:#e7e9ea">${esc(name.charAt(0).toUpperCase())}</div>`;
+}
+function emptyHTML(title, sub) {
+  return `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><strong>${title}</strong><p>${sub}</p></div>`;
+}
+
+/* ── Render ── */
+function buildRepliesHTML(replies) {
+  return replies.map(r => `
+    <div class="reply-tweet">
+      ${avatarImg(r.picture, r.name, 'reply-avatar', 32)}
+      <div class="reply-body">
+        <div class="reply-header">
+          <span class="reply-name">${esc(r.name)}</span>
+          <span class="reply-handle">@${esc(hnd(r.name))}</span>
         </div>
-      </div>`).join('');
-  }
+        <div class="reply-text">${esc(r.text)}</div>
+      </div>
+    </div>`).join('');
+}
 
-  function buildTweetHTML(p, replies) {
-    return `
-      <div class="tweet" data-id="${p.id}">
-        <div class="tweet-avatar" style="${avatarStyle(p.name)}">${esc(initial(p.name))}</div>
-        <div class="tweet-body">
-          <div class="tweet-header">
-            <span class="tweet-name">${esc(p.name)}</span>
-            <span class="tweet-handle">${esc(handle(p.name))}</span>
+function buildTweetHTML(p, replies) {
+  const likedClass = p.liked ? ' liked' : '';
+  const likeCount  = p.likes > 0 ? p.likes : '';
+  const replyCount = replies.length > 0 ? replies.length : '';
+  const deleteBtnHTML = p.is_mine ? `
+    <div class="action-group del" onclick="deletePost('${p.id}',event)">
+      <button class="action-btn" title="削除">
+        <svg viewBox="0 0 24 24"><path d="M16 6V4.5C16 3.12 14.88 2 13.5 2h-3C9.12 2 8 3.12 8 4.5V6H3v2h1.06l.81 11.21C4.98 20.78 6.28 22 7.86 22h8.29c1.58 0 2.87-1.22 2.98-2.79L19.93 8H21V6h-5zm-6-1.5c0-.28.22-.5.5-.5h3c.28 0 .5.22.5.5V6h-4V4.5zm7.13 14.57c-.04.52-.47.93-1 .93H7.86c-.53 0-.96-.41-1-.93L6.07 8h11.85l-.79 11.07z"/></svg>
+      </button>
+    </div>` : '';
+
+  return `
+    <div class="tweet" data-id="${p.id}">
+      ${avatarImg(p.picture, p.name, 'tweet-avatar', 40)}
+      <div class="tweet-body">
+        <div class="tweet-header">
+          <span class="tweet-name">${esc(p.name)}</span>
+          <span class="tweet-handle">@${esc(hnd(p.name))}</span>
+        </div>
+        <div class="tweet-text">${esc(p.text)}</div>
+        <div class="tweet-actions">
+          <div class="action-group" onclick="replyClick('${p.id}','${esc(p.name)}',event)">
+            <button class="action-btn" title="返信">
+              <svg viewBox="0 0 24 24"><path d="M14.046 2.242l-4.148-.01h-.002c-4.374 0-7.8 3.427-7.8 7.802 0 4.098 3.186 7.206 7.465 7.37v3.828c0 .108.044.286.12.403.142.225.384.347.632.347.138 0 .277-.038.402-.118.264-.168 6.473-4.14 8.088-5.506 1.902-1.61 3.04-3.97 3.043-6.312v-.017c-.006-4.367-3.43-7.787-7.8-7.788zm3.787 12.972c-1.134.96-4.862 3.405-6.772 4.643V16.67c0-.414-.335-.75-.75-.75h-.396c-3.66 0-6.318-2.476-6.318-5.886 0-3.534 2.768-6.302 6.3-6.302l4.147.01h.002c3.532 0 6.3 2.766 6.302 6.296-.003 1.91-.942 3.844-2.515 5.176z"/></svg>
+              <span class="action-count">${replyCount}</span>
+            </button>
           </div>
-          <div class="tweet-text">${esc(p.text)}</div>
-          <div class="tweet-actions">
-            <div class="action-group" onclick="replyClick('${p.id}','${esc(p.name)}',event)">
-              <button class="action-btn" title="返信">
-                <svg viewBox="0 0 24 24"><path d="M14.046 2.242l-4.148-.01h-.002c-4.374 0-7.8 3.427-7.8 7.802 0 4.098 3.186 7.206 7.465 7.37v3.828c0 .108.044.286.12.403.142.225.384.347.632.347.138 0 .277-.038.402-.118.264-.168 6.473-4.14 8.088-5.506 1.902-1.61 3.04-3.97 3.043-6.312v-.017c-.006-4.367-3.43-7.787-7.8-7.788zm3.787 12.972c-1.134.96-4.862 3.405-6.772 4.643V16.67c0-.414-.335-.75-.75-.75h-.396c-3.66 0-6.318-2.476-6.318-5.886 0-3.534 2.768-6.302 6.3-6.302l4.147.01h.002c3.532 0 6.3 2.766 6.302 6.296-.003 1.91-.942 3.844-2.515 5.176z"/></svg>
-                <span class="action-count">${replies.length || ''}</span>
-              </button>
-            </div>
-            <div class="action-group rt" onclick="event.stopPropagation()">
-              <button class="action-btn" title="リポスト">
-                <svg viewBox="0 0 24 24"><path d="M4.5 3.88l4.432 4.14-1.364 1.46L5.5 7.55V16c0 1.1.896 2 2 2H13v2H7.5c-2.209 0-4-1.79-4-4V7.55L1.432 9.48.068 8.02 4.5 3.88zM16.5 6H11V4h5.5c2.209 0 4 1.79 4 4v8.45l2.068-1.93 1.364 1.46-4.432 4.14-4.432-4.14 1.364-1.46 2.068 1.93V8c0-1.1-.896-2-2-2z"/></svg>
-              </button>
-            </div>
-            <div class="action-group like" onclick="like('${p.id}',event)">
-              <button class="action-btn" title="いいね">
-                <svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>
-                <span class="action-count">${p.likes || ''}</span>
-              </button>
-            </div>
-            <div class="action-group" onclick="event.stopPropagation()">
-              <button class="action-btn" title="共有">
-                <svg viewBox="0 0 24 24"><path d="M12 2.59l5.7 5.7-1.41 1.42L13 6.41V16h-2V6.41l-3.3 3.3-1.41-1.42L12 2.59zM21 15l-.02 3.51c0 1.38-1.12 2.49-2.5 2.49H5.5C4.11 21 3 19.88 3 18.5V15h2v3.5c0 .28.22.5.5.5h12.98c.28 0 .5-.22.5-.5L19 15h2z"/></svg>
-              </button>
-            </div>
+          <div class="action-group like${likedClass}" onclick="like('${p.id}',event)">
+            <button class="action-btn" title="いいね">
+              <svg viewBox="0 0 24 24"><path d="M16.697 5.5c-1.222-.06-2.679.51-3.89 2.16l-.805 1.09-.806-1.09C9.984 6.01 8.526 5.44 7.304 5.5c-1.243.07-2.349.78-2.91 1.91-.552 1.12-.633 2.78.479 4.82 1.074 1.97 3.257 4.27 7.129 6.61 3.87-2.34 6.052-4.64 7.126-6.61 1.111-2.04 1.03-3.7.477-4.82-.561-1.13-1.666-1.84-2.908-1.91zm4.187 7.69c-1.351 2.48-4.001 5.12-8.379 7.67l-.503.3-.504-.3c-4.379-2.55-7.029-5.19-8.382-7.67-1.36-2.5-1.41-4.86-.514-6.67.887-1.79 2.647-2.91 4.601-3.01 1.651-.09 3.368.56 4.798 2.01 1.429-1.45 3.146-2.1 4.796-2.01 1.954.1 3.714 1.22 4.601 3.01.896 1.81.846 4.17-.514 6.67z"/></svg>
+              <span class="action-count">${likeCount}</span>
+            </button>
           </div>
+          ${deleteBtnHTML}
         </div>
       </div>
-      ${replies.length ? `<div class="replies-section">${buildRepliesHTML(replies)}</div>` : ''}`;
+    </div>
+    ${replies.length ? `<div class="replies-section">${buildRepliesHTML(replies)}</div>` : ''}`;
+}
+
+function renderTimeline() {
+  const query = (document.getElementById('searchInput')?.value || '').toLowerCase().trim();
+  let tops = allPosts.filter(p => !p.reply_to);
+  if (currentTab === 'mine' && currentUser) tops = tops.filter(p => p.user_id === currentUser.id);
+  if (query) tops = tops.filter(p => p.text.toLowerCase().includes(query) || p.name.toLowerCase().includes(query));
+
+  if (!tops.length) {
+    const msgs = {
+      mine:   ['まだ投稿していません', '最初の投稿をしてみましょう'],
+      search: ['該当なし', '別のキーワードで検索してみてください'],
+      empty:  ['まだポストがありません', '最初の投稿をしてみましょう'],
+    };
+    const k = currentTab==='mine' ? 'mine' : query ? 'search' : 'empty';
+    timeline.innerHTML = emptyHTML(...msgs[k]);
+    return;
   }
+  timeline.innerHTML = tops.map(p => buildTweetHTML(p, allPosts.filter(r => r.reply_to === p.id))).join('');
+}
 
-  // ── Load ──
-  async function load() {
-    let data;
-    try {
-      const res = await fetch("/api/sns/timeline");
-      data = await res.json();
-    } catch(e) {
-      if (!timeline.querySelector('.tweet')) {
-        timeline.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><strong>接続エラー</strong><p>サーバーに接続できません</p></div>`;
-      }
-      return;
-    }
-    const tops = data.filter(p => !p.reply_to);
-    if (!tops.length) {
-      timeline.innerHTML = `<div class="empty-state"><svg viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.746l7.73-8.835L1.254 2.25H8.08l4.259 5.63 5.905-5.63zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg><strong>まだポストがありません</strong><p>最初の投稿をしてみましょう</p></div>`;
-      return;
-    }
-    timeline.innerHTML = tops.map(p => buildTweetHTML(p, data.filter(r => r.reply_to === p.id))).join('');
-  }
+function updateStats() {
+  const tops  = allPosts.filter(p => !p.reply_to);
+  const users = new Set(allPosts.map(p => p.user_id)).size;
+  document.getElementById('trendPostCount').textContent = `${tops.length}件のポスト`;
+  document.getElementById('trendUsers').textContent     = `${users}人`;
+}
 
-  // ── Init ──
-  const nameInput = document.getElementById("name");
-  const textInput = document.getElementById("text");
-  const timeline  = document.getElementById("timeline");
+/* ── Init ── */
+const textInput = document.getElementById('text');
+const timeline  = document.getElementById('timeline');
 
-  textInput.addEventListener('keydown', e => {
-    if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') post();
-  });
+textInput.addEventListener('keydown', e => {
+  if ((e.ctrlKey || e.metaKey) && e.key === 'Enter') post();
+});
 
-  load();
-  setInterval(load, 5000);
+initAuth();
+setInterval(() => { if (currentUser) load(); }, 5000);
 </script>
 </body>
 </html>
