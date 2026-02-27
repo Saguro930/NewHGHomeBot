@@ -99,7 +99,7 @@ class Count(commands.Cog):
             })
             await message.add_reaction("🚫")
             await message.channel.send(
-                f"🚫 {message.author.mention} が4回連続で投稿しました！\n"
+                f"🚫 {message.author.mention} が5回連続で投稿しました！\n"
                 f"🔁 **1 からやり直しになりました You are 戦犯！**"
             )
             return
