@@ -425,6 +425,64 @@ h2 {
   flex-shrink: 0;
 }
 
+
+/* ── アップデート画像 補助 ── */
+.update-img-label {
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 11px;
+  color: var(--accent);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+  margin-top: 4px;
+}
+
+.update-images--single {
+  grid-template-columns: minmax(0, 480px);
+}
+
+.update-images--compare {
+  grid-template-columns: repeat(2, 1fr);
+}
+
+@media (max-width: 600px) {
+  .update-images--compare { grid-template-columns: 1fr; }
+}
+
+.compare-wrap {
+  position: relative;
+}
+
+.compare-label {
+  position: absolute;
+  top: 8px; left: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 10px;
+  color: #fff;
+  background: rgba(0,0,0,0.6);
+  border: 1px solid rgba(255,255,255,0.15);
+  padding: 2px 8px;
+  border-radius: 4px;
+  letter-spacing: 0.08em;
+  pointer-events: none;
+}
+
+.compare-wrap img {
+  width: 100%;
+  aspect-ratio: 16/9;
+  object-fit: cover;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  cursor: pointer;
+  transition: border-color 0.2s, transform 0.2s;
+  display: block;
+}
+
+.compare-wrap img:hover {
+  border-color: var(--accent);
+  transform: scale(1.02);
+}
+
 /* ── ロードマップ ── */
 .roadmap-grid {
   display: grid;
@@ -634,7 +692,7 @@ footer {
 <!-- ホーム -->
 <section id="home">
   <div class="fade-in">
-    <div class="hero-badge">v0.3 リリース済み</div>
+    <div class="hero-badge">v0.3.1 リリース済み</div>
     <h1 class="hero-title">ちょっと多機能な<br><span class="accent">管理 & カジノ</span><br>Discord Bot</h1>
     <p class="hero-sub">深夜テンションで作った…<br>ProBotのXP有料化をきっかけにXP機能が追加されました。</p>
     <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
@@ -651,16 +709,32 @@ footer {
     <div class="update-card open fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v0.3.1</span>
-        <h3>カウント連続投稿制限</h3>
+        <h3>カウント制限・/top リニューアル</h3>
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-        <div class="update-images">
-          <!-- <img src="image/v031_screenshot1.png" alt="v0.3.1 スクリーンショット" onclick="openLightbox(this.src)"> -->
+        <p class="update-img-label">カウント連続投稿制限</p>
+        <div class="update-images update-images--single">
+          <img src="image/count.jpeg" alt="カウント制限" onclick="openLightbox(this.src)">
+        </div>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>カウントチャンネルでの連続投稿を3回までに制限</li>
+          <li>4回連続で投稿するとカウントが1にリセット</li>
+        </ul>
+        <p class="update-img-label">/top コマンド リニューアル</p>
+        <div class="update-images update-images--compare">
+          <div class="compare-wrap">
+            <span class="compare-label">Before</span>
+            <img src="image/top-old.jpeg" alt="旧 /top" onclick="openLightbox(this.src)">
+          </div>
+          <div class="compare-wrap">
+            <span class="compare-label">After</span>
+            <img src="image/top-new.jpeg" alt="新 /top" onclick="openLightbox(this.src)">
+          </div>
         </div>
         <ul class="update-list">
-          <li>カウントチャンネルでの連続投稿を4回までに制限</li>
-          <li>5回連続で投稿するとカウントが1にリセット</li>
+          <li>/top コマンドのUIをリニューアル</li>
+          <li>◀ ▶ ボタンでランキング種別を切り替え可能に</li>
         </ul>
       </div>
     </div>
@@ -673,15 +747,7 @@ footer {
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-        <!--
-          ここにimage/フォルダの画像を追加できます。
-          例: <img src="image/v03_count.png" alt="カウント機能">
-          複数枚追加するとグリッド表示になります。
-        -->
-        <div class="update-images">
-          <!-- <img src="image/v03_screenshot1.png" alt="v0.3 スクリーンショット" onclick="openLightbox(this.src)"> -->
-          <!-- <img src="image/v03_screenshot2.png" alt="v0.3 スクリーンショット" onclick="openLightbox(this.src)"> -->
-        </div>
+
         <ul class="update-list">
           <li>ようこそ・さようならのメッセージを追加</li>
           <li>カウント機能の追加</li>
