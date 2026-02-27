@@ -647,8 +647,26 @@ footer {
       <h2>アップデート履歴</h2>
     </div>
 
-    <!-- v0.3 -->
+    <!-- v0.3.1 -->
     <div class="update-card open fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.3.1</span>
+        <h3>カウント連続投稿制限</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <div class="update-images">
+          <!-- <img src="image/v031_screenshot1.png" alt="v0.3.1 スクリーンショット" onclick="openLightbox(this.src)"> -->
+        </div>
+        <ul class="update-list">
+          <li>カウントチャンネルでの連続投稿を4回までに制限</li>
+          <li>5回連続で投稿するとカウントが1にリセット</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.3 -->
+    <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v0.3</span>
         <h3>ようこそ・カウント機能追加</h3>
@@ -723,7 +741,7 @@ footer {
     <p class="section-desc">今後追加・改善予定の機能</p>
   </div>
   <div class="roadmap-grid">
-    <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの連続投稿制限・継続率表示</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの継続率表示</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔨</span><p>キック・バン機能の実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔞</span><p>グロチャ機能の実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">📊</span><p>Webダッシュボード実装</p></div>
@@ -778,6 +796,10 @@ footer {
       <div class="card-title">🐙 GitHub</div>
       <p class="command-desc">そのうちちゃんと整えます</p>
     </div>
+    <a href="https://hghomebot-plus.onrender.com/web/sns/sns.html" class="other-card fade-in">
+      <div class="card-title">🧪 HGSNS</div>
+      <p class="command-desc">試作品</p>
+    </a>
   </div>
 </section>
 
