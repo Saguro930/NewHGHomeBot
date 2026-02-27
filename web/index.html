@@ -588,6 +588,13 @@ h2 {
 
 .discord-wrap iframe { display: block; }
 
+
+/* ── アップデート内区切り ── */
+.update-divider {
+  border: none;
+  border-top: 1px solid var(--border);
+  margin: 20px 0;
+}
 /* ── ライトボックス ── */
 .lightbox {
   display: none;
@@ -735,6 +742,18 @@ footer {
         <ul class="update-list">
           <li>/top コマンドのUIをリニューアル</li>
           <li>◀ ▶ ボタンでランキング種別を切り替え可能に</li>
+          <li>20秒無操作でボタンが自動無効化</li>
+          <li>逆所持金ランキング（ワースト）を追加</li>
+          <li>合計資産ランキングにドル換算が反映されていないバグを修正</li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">コイン関連アップデート</p>
+        <ul class="update-list">
+          <li>/steal の罰金を「盗む予定だった金額の1/10」に変更</li>
+          <li>罰金が払えない場合は借金状態になるように</li>
+          <li>/profile で借金時に赤表示・警告を追加</li>
         </ul>
       </div>
     </div>
@@ -809,8 +828,9 @@ footer {
   <div class="roadmap-grid">
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの継続率表示</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔨</span><p>キック・バン機能の実装</p></div>
-    <div class="roadmap-item fade-in"><span class="roadmap-icon">🔞</span><p>グロチャ機能の実装</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">🌏</span><p>グロチャ機能の実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">📊</span><p>Webダッシュボード実装</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">👤</span><p>安価機能追加</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">✨</span><p>UI / UX 改善</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">▶️</span><p>Youtube検索復活</p></div>
   </div>
