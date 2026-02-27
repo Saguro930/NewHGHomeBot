@@ -37,7 +37,7 @@ async def setup(bot, db):
     from program.coin.bonus import Bonus
     from program.coin.trade import Trade
     from program.coin.steal import Steal
-    from program.top import Top
+    from program.coin.top import Top
     from program.profile import Profile
     from program.xp import XP
     from program.count import Count
