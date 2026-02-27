@@ -30,7 +30,7 @@ async def setup(bot, db):
     from program.admin.admin import Admin
     from program.ticket import Ticket
     from program.help import Help
-    from program.ai import AIChat
+    from program.ai.ai import AIChat
     from program.coin.coin import Coin
     from program.coin.casino import Casino
     from program.coin.bank import Bank
@@ -42,6 +42,7 @@ async def setup(bot, db):
     from program.xp import XP
     from program.count import Count
     from program.welcome import Welcome
+    
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Help(bot))
