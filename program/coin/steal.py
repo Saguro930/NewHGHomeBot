@@ -107,8 +107,11 @@ class Steal(commands.Cog):
 
         # --- 失敗 ---
         else:
-            fine = random.randint(10, 30)
-            thief_coins = max(0, thief_coins - fine)
+            # 盗む予定だった金額を算出して1/10を罰金に
+            intended = random.randint(5, int(target_coins * 0.3))
+            fine = max(1, intended // 10)
+            thief_coins -= fine  # マイナスになっても許容（借金）
+
             # 失敗でも経験値 +3
             steal_exp += 3
             steal_exp, steal_level, leveled_up = self.check_level_up(steal_exp, steal_level)
@@ -123,8 +126,16 @@ class Steal(commands.Cog):
                 "work_locked_until": work_locked_until.isoformat()
             })
 
-            msg = f"🚨 {interaction.user.mention} は盗みに失敗！お疲れぇ！警察に捕まり **{fine} コイン** の罰金！\n" \
-                  f"⏳ 1日間 `/work` が使用できません。"
+            if thief_coins < 0:
+                debt_msg = f"\n💸 所持金が足りず **{abs(thief_coins)} コインの借金** 状態になった！"
+            else:
+                debt_msg = ""
+
+            msg = (
+                f"🚨 {interaction.user.mention} は盗みに失敗！警察に捕まり **{fine} コイン** の罰金！\n"
+                f"⏳ 1日間 `/work` が使用できません。"
+                f"{debt_msg}"
+            )
             if leveled_up:
                 msg += f"\n📈 でも経験で学び、窃盗レベルが **Lv.{steal_level}** に上がった！"
             await interaction.response.send_message(msg)
