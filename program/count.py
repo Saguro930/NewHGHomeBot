@@ -14,9 +14,6 @@ OPERATORS = {
 }
 
 def safe_eval(expr: str) -> int | None:
-    """
-    足し算・引き算・掛け算・割り算のみ評価
-    """
     try:
         node = ast.parse(expr, mode="eval").body
         return _eval_node(node)
@@ -47,13 +44,12 @@ class Count(commands.Cog):
     async def set_count(self, ctx: commands.Context):
         guild_id = str(ctx.guild.id)
         channel_id = ctx.channel.id
-
         doc_ref = self.db.collection("guilds").document(guild_id)
         doc_ref.set({
             "count_channel": channel_id,
-            "count": 1
+            "count": 1,
+            "recent_authors": []   # 履歴もリセット
         }, merge=True)
-
         await ctx.reply(
             f"✅ カウントチャンネルを {ctx.channel.mention} に設定しますた\n"
             f"🔢 カウントは **1** からスタートです！"
@@ -70,13 +66,13 @@ class Count(commands.Cog):
         guild_id = str(message.guild.id)
         doc_ref = self.db.collection("guilds").document(guild_id)
         doc = doc_ref.get()
-
         if not doc.exists:
             return
 
         data = doc.to_dict()
         count_channel = data.get("count_channel")
         current_count = data.get("count", 1)
+        recent_authors: list = data.get("recent_authors", [])
 
         if message.channel.id != count_channel:
             return
@@ -90,14 +86,40 @@ class Count(commands.Cog):
         if value is None:
             return
 
+        author_id = message.author.id
+
+        # -----------------------------
+        # 連続投稿チェック（4回連続でリセット）
+        # -----------------------------
+        # 直近4件が全て同じユーザーなら弾く
+        if len(recent_authors) >= 4 and all(uid == author_id for uid in recent_authors[-4:]):
+            doc_ref.update({
+                "count": 1,
+                "recent_authors": []
+            })
+            await message.add_reaction("🚫")
+            await message.channel.send(
+                f"🚫 {message.author.mention} が4回連続で投稿しました！\n"
+                f"🔁 **1 からやり直しになりました You are 戦犯！**"
+            )
+            return
+
         # -----------------------------
         # 正誤判定
         # -----------------------------
         if value == current_count:
-            doc_ref.update({"count": current_count + 1})
+            # 直近4件だけ保持してFirestoreに保存
+            new_history = (recent_authors + [author_id])[-4:]
+            doc_ref.update({
+                "count": current_count + 1,
+                "recent_authors": new_history
+            })
             await message.add_reaction("✅")
         else:
-            doc_ref.update({"count": 1})
+            doc_ref.update({
+                "count": 1,
+                "recent_authors": []   # ミス時も履歴リセット
+            })
             await message.add_reaction("❌")
             await message.channel.send(
                 f"❌ 間違いです！\n"
