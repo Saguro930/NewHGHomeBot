@@ -506,6 +506,17 @@ h2 {
   transform: translateY(-2px);
 }
 
+.roadmap-item.done {
+  opacity: 0.45;
+  border-style: dashed;
+}
+
+.roadmap-item.done .roadmap-icon::after {
+  content: " ✓";
+  font-size: 14px;
+  color: #57F287;
+}
+
 .roadmap-icon {
   font-size: 20px;
   flex-shrink: 0;
@@ -516,6 +527,11 @@ h2 {
   font-size: 14px;
   color: var(--text);
   line-height: 1.6;
+}
+
+.roadmap-item.done p {
+  text-decoration: line-through;
+  color: var(--muted);
 }
 
 /* ── コマンド ── */
@@ -699,7 +715,7 @@ footer {
 <!-- ホーム -->
 <section id="home">
   <div class="fade-in">
-    <div class="hero-badge">v0.3.1 リリース済み</div>
+    <div class="hero-badge">v0.4 リリース済み</div>
     <h1 class="hero-title">ちょっと多機能な<br><span class="accent">管理 & カジノ</span><br>Discord Bot</h1>
     <p class="hero-sub">深夜テンションで作った…<br>ProBotのXP有料化をきっかけにXP機能が追加されました。</p>
     <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
@@ -712,8 +728,55 @@ footer {
       <h2>アップデート履歴</h2>
     </div>
 
-    <!-- v0.3.1 -->
+    <!-- v0.4 -->
     <div class="update-card open fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4</span>
+        <h3>管理強化・ロールボタン・サーバー統計</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+
+        <p class="update-img-label">管理コマンド</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/kick を追加。理由を任意で指定可能、自分自身へのキックは不可</li>
+          <li>/ban を追加。理由・メッセージ削除日数（0〜7日）を任意指定可能、省略時は削除なし</li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">ロール付与ボタン</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/role-button role: message: でボタン付きメッセージを任意チャンネルに投稿</li>
+          <li>ボタンを押すとロールを付与、もう一度押すと削除（トグル式）</li>
+          <li>設定内容（チャンネル・メッセージ・ロール）を Firebase に保存</li>
+          <li>Bot 再起動後もボタンが正常動作するよう永続化対応</li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">サーバー統計</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/set-server で統計レポートの送信先チャンネルを設定</li>
+          <li>毎日 JST 0時に前日のメッセージ数・メンバー増減・最多リアクション絵文字を自動送信</li>
+          <li>過去30日間のメッセージ数・参加・退出を線グラフ画像で添付</li>
+          <li>日次データを Firebase（guilds/id/server/日付）に随時保存</li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">ボーナスコマンド統合</p>
+        <ul class="update-list">
+          <li>/daily・/weekly・/monthly を /bonus type: に統合</li>
+          <li>type は daily / weekly / monthly から選択（Discord上でも選択肢表示）</li>
+          <li>クールダウン残り時間の表示を日・時間・分・秒で統一</li>
+        </ul>
+
+      </div>
+    </div>
+
+    <!-- v0.3.1 -->
+    <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v0.3.1</span>
         <h3>カウント制限・/top リニューアル</h3>
@@ -766,7 +829,6 @@ footer {
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-
         <ul class="update-list">
           <li>ようこそ・さようならのメッセージを追加</li>
           <li>カウント機能の追加</li>
@@ -827,7 +889,7 @@ footer {
   </div>
   <div class="roadmap-grid">
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの継続率表示</p></div>
-    <div class="roadmap-item fade-in"><span class="roadmap-icon">🔨</span><p>キック・バン機能の実装</p></div>
+    <div class="roadmap-item done fade-in"><span class="roadmap-icon">🔨</span><p>キック・バン機能の実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🌏</span><p>グロチャ機能の実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">📊</span><p>Webダッシュボード実装</p></div>
     <div class="roadmap-item fade-in"><span class="roadmap-icon">👤</span><p>安価機能追加</p></div>
@@ -846,6 +908,11 @@ footer {
   <div class="command-grid">
     <div class="command-card fade-in"><div class="command-name">/help</div><div class="command-desc">ヘルプを表示</div></div>
     <div class="command-card fade-in"><div class="command-name">/timeout</div><div class="command-desc">ユーザーをタイムアウト</div></div>
+    <div class="command-card fade-in"><div class="command-name">/kick</div><div class="command-desc">ユーザーをキック</div></div>
+    <div class="command-card fade-in"><div class="command-name">/ban</div><div class="command-desc">ユーザーをBAN</div></div>
+    <div class="command-card fade-in"><div class="command-name">/giverole</div><div class="command-desc">ユーザーにロールを付与</div></div>
+    <div class="command-card fade-in"><div class="command-name">/role-button</div><div class="command-desc">ロール付与ボタン付きメッセージを投稿</div></div>
+    <div class="command-card fade-in"><div class="command-name">/set-server</div><div class="command-desc">サーバー統計レポートの送信先を設定</div></div>
     <div class="command-card fade-in"><div class="command-name">@HGHomeBot+</div><div class="command-desc">AIに質問</div></div>
     <div class="command-card fade-in"><div class="command-name">/work</div><div class="command-desc">働いてコイン獲得</div></div>
     <div class="command-card fade-in"><div class="command-name">/steal</div><div class="command-desc">他ユーザーから盗む</div></div>
@@ -853,6 +920,7 @@ footer {
     <div class="command-card fade-in"><div class="command-name">/top</div><div class="command-desc">資産ランキング</div></div>
     <div class="command-card fade-in"><div class="command-name">/rank</div><div class="command-desc">レベル表示</div></div>
     <div class="command-card fade-in"><div class="command-name">/leaderboard</div><div class="command-desc">XPランキング</div></div>
+    <div class="command-card fade-in"><div class="command-name">/bonus type:</div><div class="command-desc">daily / weekly / monthly ボーナスを受け取る</div></div>
   </div>
 </section>
 
