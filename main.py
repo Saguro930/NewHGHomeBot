@@ -28,6 +28,7 @@ async def on_ready():
 
 async def setup(bot, db):
     from program.admin.admin import Admin
+    from program.admin.rolebutton import RoleButton
     from program.ticket import Ticket
     from program.help import Help
     from program.ai.ai import AIChat
@@ -58,6 +59,7 @@ async def setup(bot, db):
     await bot.add_cog(XP(bot, db))
     await bot.add_cog(Count(bot, db))
     await bot.add_cog(Welcome(bot, db))
+    await bot.add_cog(RoleButton(bot,db))
 
 async def run_bot():
     await setup(bot, db)
