@@ -2,18 +2,16 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import datetime, timedelta
-import random
+from typing import Literal
 
 class Bonus(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
         self.db = db
 
-    # Firestore ドキュメント参照
     def get_user_ref(self, user_id):
         return self.db.collection("users").document(str(user_id))
 
-    # ユーザーデータ取得
     async def get_user_data(self, user_id):
         doc = self.get_user_ref(user_id).get()
         data = doc.to_dict() if doc.exists else {}
@@ -24,11 +22,9 @@ class Bonus(commands.Cog):
         data.setdefault("last_monthly", None)
         return data
 
-    # データ更新
     async def set_user_data(self, user_id, data):
         self.get_user_ref(user_id).set(data, merge=True)
 
-    # コイン加算
     async def add_coins(self, user_id, amount):
         ref = self.get_user_ref(user_id)
         doc = ref.get()
@@ -36,121 +32,83 @@ class Bonus(commands.Cog):
         ref.set({"coins": coins}, merge=True)
         return coins
 
-    # 🔹 /daily コマンド（連続ボーナス付き）
-    @app_commands.command(name="daily", description="毎日のログインボーナス")
-    async def daily(self, interaction: discord.Interaction):
+    @app_commands.command(name="bonus", description="ボーナスを受け取る")
+    @app_commands.describe(type="ボーナスの種類を選択してください")
+    async def bonus(
+        self,
+        interaction: discord.Interaction,
+        type: Literal["daily", "weekly", "monthly"]
+    ):
         user_id = interaction.user.id
         data = await self.get_user_data(user_id)
         now = datetime.utcnow()
 
-        last_claim = data.get("last_daily")
+        # タイプごとの設定
+        config = {
+            "daily":   {"key": "last_daily",   "cooldown": timedelta(hours=20), "reward": None,  "label": "デイリー",     "emoji": "🎁"},
+            "weekly":  {"key": "last_weekly",  "cooldown": timedelta(days=7),   "reward": 700,   "label": "ウィークリー", "emoji": "💎"},
+            "monthly": {"key": "last_monthly", "cooldown": timedelta(days=30),  "reward": 3000,  "label": "マンスリー",   "emoji": "🌙"},
+        }
+        cfg = config[type]
+        last_key = cfg["key"]
+        last_claim = data.get(last_key)
+
+        # クールダウンチェック
+        if last_claim:
+            last_time = datetime.fromisoformat(last_claim)
+            diff = now - last_time
+
+            if diff < cfg["cooldown"]:
+                remaining = cfg["cooldown"] - diff
+                total_sec = int(remaining.total_seconds())
+                days, r = divmod(total_sec, 86400)
+                hours, r = divmod(r, 3600)
+                minutes, seconds = divmod(r, 60)
+
+                parts = []
+                if days:    parts.append(f"{days}日")
+                if hours:   parts.append(f"{hours}時間")
+                if minutes: parts.append(f"{minutes}分")
+                parts.append(f"{seconds}秒")
+
+                await interaction.response.send_message(
+                    f"⏳ まだ受け取れません。あと {''.join(parts)} 待ってください。",
+                    ephemeral=True
+                )
+                return
+
+        # デイリーのみ連続ログイン処理
         streak = data.get("streak", 0)
+        bonus_coins = 0
+        streak_msg = ""
 
-        if last_claim:
-            last_time = datetime.fromisoformat(last_claim)
-            diff = now - last_time
-
-            if diff < timedelta(hours=20):
-                remaining = timedelta(hours=20) - diff
-                hours, remainder = divmod(int(remaining.total_seconds()), 3600)
-                minutes, seconds = divmod(remainder, 60)
-                await interaction.response.send_message(
-                    f"⏳ まだ受け取れません。あと {hours}時間 {minutes}分 {seconds}秒 待ってください。",
-                    ephemeral=True
-                )
-                return
-            elif diff > timedelta(hours=48):
-                streak = 1
+        if type == "daily":
+            if last_claim:
+                diff = now - datetime.fromisoformat(last_claim)
+                streak = 1 if diff > timedelta(hours=48) else streak + 1
             else:
-                streak += 1
+                streak = 1
+
+            base_reward = 100
+            bonus_coins = min(streak * 10, 200)
+            reward = base_reward + bonus_coins
+            streak_msg = f"\n🔥 連続ログイン {streak} 日目！"
+
+            await self.set_user_data(user_id, {"streak": streak})
         else:
-            streak = 1
+            reward = cfg["reward"]
 
-        base_reward = 100
-        bonus = min(streak * 10, 200)
-        reward = base_reward + bonus
-
+        # コイン付与 & 最終受取時刻を更新
         await self.add_coins(user_id, reward)
-        await self.set_user_data(user_id, {
-            "last_daily": now.isoformat(),
-            "streak": streak
-        })
+        await self.set_user_data(user_id, {last_key: now.isoformat()})
 
-        msg = (
-            f"🎁 デイリーボーナスを受け取りました！\n"
-            f"💰 獲得：{reward} コイン（基本 {base_reward} + ボーナス {bonus}）\n"
-            f"🔥 連続ログイン {streak} 日目！"
-        )
-        await interaction.response.send_message(msg)
-
-    # 🔹 /weekly コマンド（週1ボーナス）
-    @app_commands.command(name="weekly", description="週に一度のボーナスを受け取る")
-    async def weekly(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        data = await self.get_user_data(user_id)
-        now = datetime.utcnow()
-
-        last_claim = data.get("last_weekly")
-
-        if last_claim:
-            last_time = datetime.fromisoformat(last_claim)
-            diff = now - last_time
-
-            if diff < timedelta(days=7):
-                remaining = timedelta(days=7) - diff
-                days, remainder = divmod(int(remaining.total_seconds()), 86400)
-                hours, remainder = divmod(remainder, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                await interaction.response.send_message(
-                    f"⏳ まだ受け取れません。あと {days}日 {hours}時間 {minutes}分 待ってください。",
-                    ephemeral=True
-                )
-                return
-
-        reward = 700
-        await self.add_coins(user_id, reward)
-        await self.set_user_data(user_id, {
-            "last_weekly": now.isoformat()
-        })
-
+        # 返信メッセージ
+        detail = f"（基本 {base_reward} + ボーナス {bonus_coins}）" if type == "daily" else ""
         await interaction.response.send_message(
-            f"💎 ウィークリーボーナスを受け取りました！\n💰 +{reward} コイン\n📅 次回は1週間後に受け取れます！"
+            f"{cfg['emoji']} {cfg['label']}ボーナスを受け取りました！\n"
+            f"💰 獲得：{reward} コイン {detail}"
+            f"{streak_msg}"
         )
 
-      # 🔹 /monthly コマンド（月1ボーナス）
-    @app_commands.command(name="monthly", description="月に一度のボーナスを受け取る")
-    async def monthly(self, interaction: discord.Interaction):
-        user_id = interaction.user.id
-        data = await self.get_user_data(user_id)
-        now = datetime.utcnow()
-
-        last_claim = data.get("last_monthly")
-
-        if last_claim:
-            last_time = datetime.fromisoformat(last_claim)
-            diff = now - last_time
-
-            if diff < timedelta(days=30):
-                remaining = timedelta(days=30) - diff
-                days, remainder = divmod(int(remaining.total_seconds()), 86400)
-                hours, remainder = divmod(remainder, 3600)
-                minutes, seconds = divmod(remainder, 60)
-                await interaction.response.send_message(
-                    f"⏳ まだ受け取れません。あと {days}日 {hours}時間 {minutes}分 待ってください。",
-                    ephemeral=True
-                )
-                return
-
-        reward = 3000
-        await self.add_coins(user_id, reward)
-        await self.set_user_data(user_id, {
-            "last_monthly": now.isoformat()
-        })
-
-        await interaction.response.send_message(
-            f"🌙 マンスリーボーナスを受け取りました！\n💰 +{reward} コイン\n📅 次回は30日後に受け取れます！"
-        )
-
-# Cog登録
 async def setup(bot, db):
     await bot.add_cog(Bonus(bot, db))
