@@ -100,6 +100,21 @@ class Server(commands.Cog):
         data["reactions"] = reactions
         self.save_today_data(reaction.message.guild.id, data)
 
+    @commands.Cog.listener()
+    async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.User):
+        if user.bot or not reaction.message.guild:
+            return
+        data = self.get_today_data(reaction.message.guild.id)
+        emoji_str = str(reaction.emoji)
+        reactions = data.get("reactions", {})
+        current = reactions.get(emoji_str, 0)
+        if current > 1:
+            reactions[emoji_str] = current - 1
+        elif current == 1:
+            del reactions[emoji_str]  # 0になったらキーごと削除
+        data["reactions"] = reactions
+        self.save_today_data(reaction.message.guild.id, data)
+
     # ─── 線グラフ生成 ─────────────────────────────────────────────
 
     def generate_graph(self, guild_id: int) -> io.BytesIO | None:
