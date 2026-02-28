@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands
 from discord import app_commands
 from datetime import timedelta
+from typing import Literal
 
 # 🔒 管理者チェック関数（Slash用）
 def is_admin(interaction: discord.Interaction):
@@ -45,30 +46,39 @@ class Admin(commands.Cog):
                 ephemeral=True
             )
 
-    # 🔹 ロール付与コマンド（管理者限定）
+    # 🔹 ロール付与・削除コマンド（管理者限定）
     @app_commands.command(
-        name="giverole",
-        description="指定したユーザーにロールを付与します"
+        name="role",
+        description="指定したユーザーにロールを付与・削除します"
     )
     @app_commands.describe(
-        user="ロールを付与するユーザー",
-        role="付与するロール"
+        type="give：付与 / remove：削除",
+        user="対象のユーザー",
+        role="対象のロール"
     )
     @app_commands.check(is_admin)
-    async def giverole(
+    async def role(
         self,
         interaction: discord.Interaction,
+        type: Literal["give", "remove"],
         user: discord.Member,
         role: discord.Role
     ):
         try:
-            await user.add_roles(role)
-            await interaction.response.send_message(
-                f"✅ {user.mention} に **{role.name}** を付与しました。"
-            )
+            if type == "give":
+                await user.add_roles(role)
+                await interaction.response.send_message(
+                    f"✅ {user.mention} に **{role.name}** を付与しました。"
+                )
+            else:
+                await user.remove_roles(role)
+                await interaction.response.send_message(
+                    f"🗑 {user.mention} から **{role.name}** を削除しました。"
+                )
         except Exception as e:
+            action = "付与" if type == "give" else "削除"
             await interaction.response.send_message(
-                f"❌ ロールを付与できませんでした: {e}",
+                f"❌ ロールを{action}できませんでした: {e}",
                 ephemeral=True
             )
 
@@ -150,7 +160,7 @@ class Admin(commands.Cog):
 
     # 🔹 権限エラー時の共通処理
     @timeout.error
-    @giverole.error
+    @role.error
     @kick.error
     @ban.error
     async def admin_error(
