@@ -44,7 +44,6 @@ async def setup(bot, db):
     from program.count import Count
     from program.welcome import Welcome
     from program.server.server import Server
-    from program.hobby.game2048 import Game2048
     
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -63,7 +62,6 @@ async def setup(bot, db):
     await bot.add_cog(Welcome(bot, db))
     await bot.add_cog(RoleButton(bot,db))
     await bot.add_cog(Server(bot,db))
-    await bot.add_cog(Game2048(bot))
     
 async def run_bot():
     await setup(bot, db)
