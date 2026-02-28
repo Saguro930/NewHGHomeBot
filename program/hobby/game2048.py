@@ -2,64 +2,63 @@ import discord
 from discord import app_commands
 from discord.ext import commands
 import random
-import io
-from PIL import Image, ImageDraw, ImageFont
 
-# ── フォントキャッシュ（起動時に一度だけ読み込む）─────────────────
-_font_cache: dict[int, ImageFont.FreeTypeFont] = {}
-
-FONT_PATHS = [
-    "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
-    "/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf",
-    "/System/Library/Fonts/Helvetica.ttc",
-]
-
-def get_font(size: int) -> ImageFont.FreeTypeFont:
-    if size in _font_cache:
-        return _font_cache[size]
-    for path in FONT_PATHS:
-        try:
-            f = ImageFont.truetype(path, size)
-            _font_cache[size] = f
-            return f
-        except Exception:
-            continue
-    f = ImageFont.load_default()
-    _font_cache[size] = f
-    return f
-
-# 起動時にまとめてキャッシュ
-for _s in (22, 26, 28, 36, 44):
-    get_font(_s)
-
-
-# ── タイル色定義 ──────────────────────────────────────────────────
-TILE_BG = {
-    0:    (205, 193, 180),
-    2:    (238, 228, 218),
-    4:    (237, 224, 200),
-    8:    (242, 177, 121),
-    16:   (245, 149,  99),
-    32:   (246, 124,  95),
-    64:   (246,  94,  59),
-    128:  (237, 207, 114),
-    256:  (237, 204,  97),
-    512:  (237, 200,  80),
-    1024: (237, 197,  63),
-    2048: (237, 194,  46),
+# ── タイル表示設定 ────────────────────────────────────────────────
+TILE = {
+    0:    " · · · ",
+    2:    "   2   ",
+    4:    "   4   ",
+    8:    "   8   ",
+    16:   "  16   ",
+    32:   "  32   ",
+    64:   "  64   ",
+    128:  "  128  ",
+    256:  "  256  ",
+    512:  "  512  ",
+    1024: " 1024  ",
+    2048: " 2048  ",
 }
-TILE_FG = {
-    2: (119, 110, 101),
-    4: (119, 110, 101),
+
+TILE_EMOJI = {
+    0:    "⬜",
+    2:    "🟦",
+    4:    "🟩",
+    8:    "🟧",
+    16:   "🟥",
+    32:   "🟪",
+    64:   "🔵",
+    128:  "🟡",
+    256:  "🌕",
+    512:  "⭐",
+    1024: "🌟",
+    2048: "💎",
 }
+
+def render_board(board: list[list[int]]) -> str:
+    rows = []
+    rows.append("```")
+    rows.append("┌───────┬───────┬───────┬───────┐")
+    for i, row in enumerate(board):
+        # 絵文字行
+        emoji_line = "  ".join(TILE_EMOJI.get(v, "🔶") for v in row)
+        rows.append(f"│  {emoji_line}  │")
+        # 数値行
+        num_line = "│".join(TILE.get(v, f"{v:^7}") for v in row)
+        rows.append(f"│{num_line}│")
+        if i < 3:
+            rows.append("├───────┼───────┼───────┼───────┤")
+        else:
+            rows.append("└───────┴───────┴───────┴───────┘")
+    rows.append("```")
+    return "\n".join(rows)
 
 
 # ── ゲームロジック ────────────────────────────────────────────────
 class GameBoard:
-    def __init__(self):
+    def __init__(self, best: int = 0):
         self.board = [[0] * 4 for _ in range(4)]
         self.score = 0
-        self.best  = 0
+        self.best  = best
         self.spawn()
         self.spawn()
 
@@ -69,7 +68,7 @@ class GameBoard:
             r, c = random.choice(empty)
             self.board[r][c] = 2 if random.random() < 0.9 else 4
 
-    def merge(self, row):
+    def merge(self, row: list[int]) -> list[int]:
         tiles = [x for x in row if x != 0]
         i = 0
         while i < len(tiles) - 1:
@@ -80,7 +79,7 @@ class GameBoard:
             i += 1
         return tiles + [0] * (4 - len(tiles))
 
-    def move(self, direction):
+    def move(self, direction: str) -> bool:
         old = [r[:] for r in self.board]
         if direction == "left":
             self.board = [self.merge(row) for row in self.board]
@@ -98,13 +97,12 @@ class GameBoard:
                     self.board[r][c] = col[r]
 
         if self.board != old:
-            if self.score > self.best:
-                self.best = self.score
+            self.best = max(self.best, self.score)
             self.spawn()
             return True
         return False
 
-    def is_game_over(self):
+    def is_game_over(self) -> bool:
         for r in range(4):
             for c in range(4):
                 if self.board[r][c] == 0:
@@ -115,99 +113,56 @@ class GameBoard:
                     return False
         return True
 
-    def has_won(self):
+    def has_won(self) -> bool:
         return any(self.board[r][c] >= 2048 for r in range(4) for c in range(4))
 
+    def highest(self) -> int:
+        return max(self.board[r][c] for r in range(4) for c in range(4))
 
-# ── 画像描画（bytes を返す）───────────────────────────────────────
-CELL = 100
-PAD  = 12
-SIZE = CELL * 4 + PAD * 5
 
-def draw_board_bytes(board: list, score: int, best: int) -> bytes:
-    """PIL処理をすべてここに集約しbytesで返す（executor向け）"""
-    img  = Image.new("RGB", (SIZE, SIZE + 70), (187, 173, 160))
-    draw = ImageDraw.Draw(img)
+# ── Embed生成 ─────────────────────────────────────────────────────
+def make_embed(game: GameBoard, owner: discord.User, state="playing") -> discord.Embed:
+    cfg = {
+        "playing": ("🎮 2048",              discord.Color.blurple()),
+        "won":     ("💎 2048 達成！",        discord.Color.gold()),
+        "over":    ("💀 ゲームオーバー",      discord.Color.red()),
+    }
+    title, color = cfg[state]
 
-    # スコア帯
-    draw.rectangle([0, 0, SIZE, 66], fill=(143, 122, 102))
-    draw.text((16, 10),         "SCORE",      fill=(238, 228, 218), font=get_font(22))
-    draw.text((16, 36),         f"{score:,}", fill=(255, 255, 255), font=get_font(26))
-    draw.text((SIZE - 120, 10), "BEST",       fill=(238, 228, 218), font=get_font(22))
-    draw.text((SIZE - 120, 36), f"{best:,}",  fill=(255, 255, 255), font=get_font(26))
-
-    # タイル
-    for r in range(4):
-        for c in range(4):
-            val = board[r][c]
-            x   = PAD + c * (CELL + PAD)
-            y   = 70 + PAD + r * (CELL + PAD)
-            bg  = TILE_BG.get(val, (60, 58, 50))
-            draw.rounded_rectangle([x, y, x + CELL, y + CELL], radius=8, fill=bg)
-
-            if val != 0:
-                text = str(val)
-                fg   = TILE_FG.get(val, (255, 255, 255))
-                fs   = 44 if len(text) <= 2 else (36 if len(text) == 3 else 28)
-                font = get_font(fs)
-                bbox = draw.textbbox((0, 0), text, font=font)
-                tw, th = bbox[2] - bbox[0], bbox[3] - bbox[1]
-                draw.text(
-                    (x + (CELL - tw) // 2, y + (CELL - th) // 2),
-                    text, fill=fg, font=font
-                )
-
-    buf = io.BytesIO()
-    img.save(buf, format="PNG")
-    return buf.getvalue()
-
-def bytes_to_file(data: bytes) -> discord.File:
-    return discord.File(io.BytesIO(data), filename="2048.png")
+    embed = discord.Embed(title=title, description=render_board(game.board), color=color)
+    embed.add_field(name="💯 スコア",     value=f"```{game.score:,}```",   inline=True)
+    embed.add_field(name="🏅 ベスト",     value=f"```{game.best:,}```",    inline=True)
+    embed.add_field(name="🔢 最大タイル", value=f"```{game.highest()}```", inline=True)
+    embed.set_author(name=owner.display_name, icon_url=owner.display_avatar.url)
+    embed.set_footer(text="↑ ← ↓ → で操作　🔄 リスタート　2分操作なしで終了")
+    return embed
 
 
 # ── View ─────────────────────────────────────────────────────────
 class ControlView(discord.ui.View):
-    def __init__(self, cog, user_id: int, game: GameBoard):
+    def __init__(self, cog, owner: discord.User, game: GameBoard):
         super().__init__(timeout=120)
-        self.cog     = cog
-        self.user_id = user_id
-        self.game    = game
+        self.cog   = cog
+        self.owner = owner
+        self.game  = game
 
     async def interaction_check(self, interaction: discord.Interaction) -> bool:
-        if interaction.user.id != self.user_id:
+        if interaction.user.id != self.owner.id:
             await interaction.response.send_message(
                 "❌ 自分のゲームを遊んでね！", ephemeral=True
             )
             return False
         return True
 
-    def make_embed(self, state="playing") -> discord.Embed:
-        titles = {"playing": "🎮 2048", "won": "🏆 2048 達成！", "over": "💀 ゲームオーバー"}
-        colors = {"playing": discord.Color.blurple(), "won": discord.Color.gold(), "over": discord.Color.red()}
-        embed = discord.Embed(title=titles[state], color=colors[state])
-        embed.set_image(url="attachment://2048.png")
-        return embed
-
     def _disable_arrows(self):
         for child in self.children:
             if isinstance(child, discord.ui.Button) and child.custom_id != "restart":
                 child.disabled = True
 
-    async def _render(self, interaction: discord.Interaction) -> discord.File:
-        loop = interaction.client.loop
-        data = await loop.run_in_executor(
-            None, draw_board_bytes,
-            self.game.board, self.game.score, self.game.best
-        )
-        return bytes_to_file(data)
-
     async def _move(self, interaction: discord.Interaction, direction: str):
-        await interaction.response.defer()
-
         if not self.game.move(direction):
+            await interaction.response.defer()
             return
-
-        file = await self._render(interaction)
 
         if self.game.has_won():
             self._disable_arrows()
@@ -218,8 +173,8 @@ class ControlView(discord.ui.View):
         else:
             state = "playing"
 
-        await interaction.edit_original_response(
-            embed=self.make_embed(state), attachments=[file], view=self
+        await interaction.response.edit_message(
+            embed=make_embed(self.game, self.owner, state), view=self
         )
 
     # Row 0: [　][↑][　]
@@ -249,20 +204,13 @@ class ControlView(discord.ui.View):
 
     @discord.ui.button(label="🔄", style=discord.ButtonStyle.danger, custom_id="restart", row=2)
     async def restart(self, interaction: discord.Interaction, _):
-        await interaction.response.defer()
-
-        best = self.game.best
-        self.game = GameBoard()
-        self.game.best = best
-        self.cog.games[self.user_id] = self.game
-
+        self.game = GameBoard(best=self.game.best)
+        self.cog.games[self.owner.id] = self.game
         for child in self.children:
             if isinstance(child, discord.ui.Button) and child.label != "　":
                 child.disabled = False
-
-        file = await self._render(interaction)
-        await interaction.edit_original_response(
-            embed=self.make_embed(), attachments=[file], view=self
+        await interaction.response.edit_message(
+            embed=make_embed(self.game, self.owner), view=self
         )
 
     @discord.ui.button(label="　", style=discord.ButtonStyle.secondary, disabled=True, row=2)
@@ -277,23 +225,31 @@ class ControlView(discord.ui.View):
 class Game2048(commands.Cog):
     def __init__(self, bot):
         self.bot   = bot
-        self.games = {}
+        self.games: dict[int, GameBoard] = {}
 
     @app_commands.command(name="2048", description="2048ゲームを開始します")
     async def start_2048(self, interaction: discord.Interaction):
-        await interaction.response.defer()
-
         game = GameBoard()
         self.games[interaction.user.id] = game
-        view = ControlView(self, interaction.user.id, game)
-
-        loop = interaction.client.loop
-        data = await loop.run_in_executor(
-            None, draw_board_bytes, game.board, game.score, game.best
+        view = ControlView(self, interaction.user, game)
+        await interaction.response.send_message(
+            embed=make_embed(game, interaction.user), view=view
         )
-        file = bytes_to_file(data)
-        await interaction.followup.send(embed=view.make_embed(), file=file, view=view)
 
 
 async def setup(bot):
     await bot.add_cog(Game2048(bot))
+```
+
+**改善点：**
+
+各セルが絵文字＋数値の2段構造になり、罫線で区切られます：
+```
+┌───────┬───────┬───────┬───────┐
+│  🟦  🟦  ⬜  ⬜  │
+│   2   │   2   │ · · · │ · · · │
+├───────┼───────┼───────┼───────┤
+│  ⬜  🟩  ⬜  ⬜  │
+│ · · · │   4   │ · · · │ · · · │
+...
+└───────┴───────┴───────┴───────┘
