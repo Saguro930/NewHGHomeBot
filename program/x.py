@@ -2,6 +2,7 @@ import discord
 from discord.ext import commands, tasks
 from discord import app_commands
 from datetime import datetime, timezone
+from typing import Literal
 import asyncio
 import feedparser
 
@@ -19,7 +20,6 @@ NITTER_INSTANCES = [
 ]
 
 async def fetch_rss(username: str) -> tuple[list, dict]:
-    """Nitter RSS から最新ツイートを取得（全インスタンスをフォールバック）"""
     loop = asyncio.get_event_loop()
     for instance in NITTER_INSTANCES:
         url = f"{instance}/{username}/rss"
@@ -67,13 +67,15 @@ class XNotifier(commands.Cog):
         doc  = self.guild_ref(guild.id).get()
         data = doc.to_dict() if doc.exists else {}
 
-        # 通知チャンネル未設定はスキップ
         channel_id = data.get("x_channel")
         if not channel_id:
             return
         channel = guild.get_channel(int(channel_id))
         if not channel:
             return
+
+        # 通知タイプ（"embed" or "link"、デフォルトは "embed"）
+        notify_type = data.get("x_notify_type", "embed")
 
         accounts = list(self.x_col(guild.id).stream())
         if not accounts:
@@ -92,30 +94,48 @@ class XNotifier(commands.Cog):
                 print(f"[X] @{username} RSS取得失敗（全インスタンス試行済み）")
                 continue
 
-            # 初回は最新1件のIDだけ保存してスキップ
             if not last_id:
                 self.x_col(guild.id).document(username).update({
                     "last_tweet_id": entries[0].get("id", "")
                 })
                 continue
 
-            # last_id より新しいエントリだけ抽出
             to_notify = []
             for entry in entries:
                 if entry.get("id", "") == last_id:
                     break
                 to_notify.append(entry)
 
-            # 古い順に通知
             for entry in reversed(to_notify):
-                embed = self._make_embed(entry, username, feed_info)
-                await channel.send(embed=embed)
-                await asyncio.sleep(1)  # 連投防止
+                if notify_type == "link":
+                    await channel.send(self._make_link(entry, username))
+                else:
+                    await channel.send(embed=self._make_embed(entry, username, feed_info))
+                await asyncio.sleep(1)
 
             if to_notify:
                 self.x_col(guild.id).document(username).update({
                     "last_tweet_id": to_notify[0].get("id", "")
                 })
+
+    # ── リンクのみ ────────────────────────────────────────────────
+
+    def _make_link(self, entry: dict, username: str) -> str:
+        link = entry.get("link", f"https://x.com/{username}")
+        for instance in NITTER_INSTANCES:
+            if instance in link:
+                link = link.replace(instance, "https://x.com")
+                break
+
+        title    = entry.get("title", "")
+        summary  = entry.get("summary", "")
+        is_rt    = summary.startswith("RT @")
+        is_reply = title.startswith("R to @")
+        label    = "🔁" if is_rt else ("↩️" if is_reply else "🐦")
+
+        return f"{label} **@{username}** の新着ポスト\n{link}"
+
+    # ── Embed ─────────────────────────────────────────────────────
 
     def _make_embed(self, entry: dict, username: str, feed_info: dict) -> discord.Embed:
         title     = entry.get("title", "")
@@ -123,13 +143,11 @@ class XNotifier(commands.Cog):
         summary   = entry.get("summary", "")
         published = entry.get("published_parsed")
 
-        # nitter URL → x.com URL に変換
         for instance in NITTER_INSTANCES:
             if instance in link:
                 link = link.replace(instance, "https://x.com")
                 break
 
-        # RT・リプライ判定
         is_rt    = summary.startswith("RT @")
         is_reply = title.startswith("R to @")
 
@@ -165,15 +183,29 @@ class XNotifier(commands.Cog):
 
     # ── /set-x ───────────────────────────────────────────────────
 
-    @app_commands.command(name="set-x", description="X の通知を送信するチャンネルを設定します")
-    @app_commands.describe(channel="通知を送るチャンネル")
+    @app_commands.command(name="set-x", description="X の通知チャンネルと通知タイプを設定します")
+    @app_commands.describe(
+        channel="通知を送るチャンネル",
+        type="embed：内容も表示 / link：リンクのみ"
+    )
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_x(self, interaction: discord.Interaction, channel: discord.TextChannel):
+    async def set_x(
+        self,
+        interaction: discord.Interaction,
+        channel: discord.TextChannel,
+        type: Literal["embed", "link"] = "embed"
+    ):
         self.guild_ref(interaction.guild.id).set(
-            {"x_channel": channel.id}, merge=True
+            {
+                "x_channel":     channel.id,
+                "x_notify_type": type,
+            },
+            merge=True
         )
+        type_label = "内容も表示（Embed）" if type == "embed" else "リンクのみ"
         await interaction.response.send_message(
-            f"✅ X通知チャンネルを {channel.mention} に設定しました。",
+            f"✅ X通知チャンネルを {channel.mention} に設定しました。\n"
+            f"📋 通知タイプ：**{type_label}**",
             ephemeral=True
         )
 
@@ -192,14 +224,12 @@ class XNotifier(commands.Cog):
         ref = self.x_col(interaction.guild.id).document(username)
 
         if ref.get().exists:
-            # 登録済みなら削除
             ref.delete()
             await interaction.followup.send(
                 f"🗑 **@{username}** の通知を解除しました。",
                 ephemeral=True
             )
         else:
-            # 存在確認
             entries, _ = await fetch_rss(username)
             if not entries:
                 await interaction.followup.send(
@@ -230,10 +260,13 @@ class XNotifier(commands.Cog):
 
         channel_id      = data.get("x_channel")
         channel_mention = f"<#{channel_id}>" if channel_id else "未設定"
+        notify_type     = data.get("x_notify_type", "embed")
+        type_label      = "内容も表示（Embed）" if notify_type == "embed" else "リンクのみ"
 
         if not docs:
             await interaction.response.send_message(
                 f"📋 通知チャンネル：{channel_mention}\n"
+                f"📨 通知タイプ：{type_label}\n"
                 f"監視中のアカウントはありません。",
                 ephemeral=True
             )
@@ -241,7 +274,8 @@ class XNotifier(commands.Cog):
 
         names = "\n".join(f"・@{d.to_dict().get('username')}" for d in docs)
         await interaction.response.send_message(
-            f"📋 通知チャンネル：{channel_mention}\n\n"
+            f"📋 通知チャンネル：{channel_mention}\n"
+            f"📨 通知タイプ：{type_label}\n\n"
             f"**監視中のアカウント**\n{names}",
             ephemeral=True
         )
