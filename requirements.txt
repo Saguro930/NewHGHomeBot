@@ -4,3 +4,4 @@ firebase-admin==7.1.0
 authlib
 requests
 openai>=1.0.0
+matplotlib
