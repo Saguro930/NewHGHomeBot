@@ -7,7 +7,6 @@ from datetime import timedelta
 def is_admin(interaction: discord.Interaction):
     return interaction.user.guild_permissions.administrator
 
-
 class Admin(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -34,11 +33,9 @@ class Admin(commands.Cog):
                 ephemeral=True
             )
             return
-
         try:
             until = discord.utils.utcnow() + timedelta(minutes=duration)
             await user.timeout(until)
-
             await interaction.response.send_message(
                 f"⏱ {user.mention} を **{duration} 分間** タイムアウトしました。"
             )
@@ -75,9 +72,87 @@ class Admin(commands.Cog):
                 ephemeral=True
             )
 
+    # 🔹 Kick コマンド（管理者限定）
+    @app_commands.command(
+        name="kick",
+        description="指定したユーザーをキックします"
+    )
+    @app_commands.describe(
+        user="キックするユーザー",
+        reason="キックの理由（任意）"
+    )
+    @app_commands.check(is_admin)
+    async def kick(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        reason: str = "理由なし"
+    ):
+        if user == interaction.user:
+            await interaction.response.send_message(
+                "❌ 自分自身をキックすることはできません。",
+                ephemeral=True
+            )
+            return
+        try:
+            await user.kick(reason=reason)
+            await interaction.response.send_message(
+                f"👢 {user.mention} をキックしました。\n📋 理由：{reason}"
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ キックできませんでした: {e}",
+                ephemeral=True
+            )
+
+    # 🔹 Ban コマンド（管理者限定）
+    @app_commands.command(
+        name="ban",
+        description="指定したユーザーをBANします"
+    )
+    @app_commands.describe(
+        user="BANするユーザー",
+        reason="BANの理由（任意）",
+        delete_days="過去のメッセージ削除日数・0〜7日（省略時は削除なし）"
+    )
+    @app_commands.check(is_admin)
+    async def ban(
+        self,
+        interaction: discord.Interaction,
+        user: discord.Member,
+        reason: str = "理由なし",
+        delete_days: int = 0
+    ):
+        if user == interaction.user:
+            await interaction.response.send_message(
+                "❌ 自分自身をBANすることはできません。",
+                ephemeral=True
+            )
+            return
+        if not (0 <= delete_days <= 7):
+            await interaction.response.send_message(
+                "❌ メッセージ削除日数は 0〜7 の範囲で指定してください。",
+                ephemeral=True
+            )
+            return
+        try:
+            await user.ban(reason=reason, delete_message_days=delete_days)
+            await interaction.response.send_message(
+                f"🔨 {user.mention} をBANしました。\n"
+                f"📋 理由：{reason}\n"
+                f"🗑 メッセージ削除：{'なし' if delete_days == 0 else f'過去 {delete_days} 日分'}"
+            )
+        except Exception as e:
+            await interaction.response.send_message(
+                f"❌ BANできませんでした: {e}",
+                ephemeral=True
+            )
+
     # 🔹 権限エラー時の共通処理
     @timeout.error
     @giverole.error
+    @kick.error
+    @ban.error
     async def admin_error(
         self,
         interaction: discord.Interaction,
@@ -88,7 +163,6 @@ class Admin(commands.Cog):
                 "❌ このコマンドは管理者のみ使用できます。",
                 ephemeral=True
             )
-
 
 # 🔹 Cog登録
 async def setup(bot):
