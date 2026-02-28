@@ -31,7 +31,6 @@ body {
   overflow-x: hidden;
 }
 
-/* ── グリッドノイズ背景 ── */
 body::before {
   content: "";
   position: fixed;
@@ -44,7 +43,6 @@ body::before {
   z-index: 0;
 }
 
-/* ── ナビ ── */
 nav {
   position: fixed;
   top: 0; left: 0; right: 0;
@@ -69,16 +67,8 @@ nav {
   align-items: center;
   gap: 8px;
 }
-
-.nav-logo span {
-  color: var(--accent);
-}
-
-.nav-links {
-  display: flex;
-  gap: 8px;
-}
-
+.nav-logo span { color: var(--accent); }
+.nav-links { display: flex; gap: 8px; }
 .nav-links a {
   color: var(--muted);
   text-decoration: none;
@@ -89,14 +79,12 @@ nav {
   border: 1px solid transparent;
   transition: all 0.25s;
 }
-
 .nav-links a:hover {
   color: var(--accent2);
   border-color: var(--border2);
   background: rgba(59,130,246,0.06);
 }
 
-/* ── ハンバーガー ── */
 .hamburger {
   display: none;
   flex-direction: column;
@@ -104,16 +92,13 @@ nav {
   cursor: pointer;
   padding: 6px;
 }
-
 .hamburger span {
   display: block;
-  width: 22px;
-  height: 2px;
+  width: 22px; height: 2px;
   background: var(--text);
   border-radius: 2px;
   transition: 0.3s;
 }
-
 .hamburger.open span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
 .hamburger.open span:nth-child(2) { opacity: 0; }
 .hamburger.open span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
@@ -130,9 +115,7 @@ nav {
   padding: 16px 5%;
   gap: 4px;
 }
-
 .mobile-menu.open { display: flex; }
-
 .mobile-menu a {
   color: var(--text);
   text-decoration: none;
@@ -143,14 +126,12 @@ nav {
   border: 1px solid transparent;
   transition: 0.2s;
 }
-
 .mobile-menu a:hover {
   background: rgba(59,130,246,0.08);
   border-color: var(--border2);
   color: var(--accent2);
 }
 
-/* ── セクション共通 ── */
 section {
   position: relative;
   z-index: 1;
@@ -158,11 +139,7 @@ section {
   padding: 120px 8% 80px;
   scroll-margin-top: 64px;
 }
-
-.section-header {
-  margin-bottom: 48px;
-}
-
+.section-header { margin-bottom: 48px; }
 .section-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -171,7 +148,6 @@ section {
   text-transform: uppercase;
   margin-bottom: 12px;
 }
-
 h2 {
   font-family: 'Syne', sans-serif;
   font-size: clamp(28px, 5vw, 44px);
@@ -179,14 +155,8 @@ h2 {
   color: #fff;
   line-height: 1.15;
 }
+.section-desc { margin-top: 10px; color: var(--muted); font-size: 14px; }
 
-.section-desc {
-  margin-top: 10px;
-  color: var(--muted);
-  font-size: 14px;
-}
-
-/* ── カード ── */
 .card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -197,7 +167,6 @@ h2 {
   position: relative;
   overflow: hidden;
 }
-
 .card::before {
   content: "";
   position: absolute;
@@ -206,15 +175,12 @@ h2 {
   opacity: 0;
   transition: opacity 0.3s;
 }
-
 .card:hover {
   border-color: var(--border2);
   box-shadow: 0 0 0 1px var(--border2), 0 8px 32px rgba(0,0,0,0.5);
   transform: translateY(-3px);
 }
-
 .card:hover::before { opacity: 1; }
-
 .card-title {
   font-family: 'Syne', sans-serif;
   font-size: 16px;
@@ -222,14 +188,8 @@ h2 {
   color: #fff;
   margin-bottom: 8px;
 }
+.card p { color: var(--muted); font-size: 14px; line-height: 1.7; }
 
-.card p {
-  color: var(--muted);
-  font-size: 14px;
-  line-height: 1.7;
-}
-
-/* ── ボタン ── */
 .btn {
   display: inline-flex;
   align-items: center;
@@ -247,7 +207,6 @@ h2 {
   transition: all 0.25s;
   border: 1px solid transparent;
 }
-
 .btn:hover {
   background: transparent;
   border-color: var(--accent);
@@ -255,7 +214,6 @@ h2 {
   box-shadow: 0 0 20px var(--glow);
 }
 
-/* ── ヒーロー ── */
 #home {
   display: flex;
   flex-direction: column;
@@ -277,7 +235,6 @@ h2 {
   margin-bottom: 24px;
   width: fit-content;
 }
-
 .hero-badge::before {
   content: "";
   width: 6px; height: 6px;
@@ -285,7 +242,6 @@ h2 {
   background: var(--accent);
   animation: pulse 2s infinite;
 }
-
 @keyframes pulse {
   0%, 100% { opacity: 1; }
   50% { opacity: 0.3; }
@@ -299,9 +255,7 @@ h2 {
   color: #fff;
   margin-bottom: 20px;
 }
-
 .hero-title .accent { color: var(--accent); }
-
 .hero-sub {
   color: var(--muted);
   font-size: clamp(14px, 2vw, 16px);
@@ -310,14 +264,6 @@ h2 {
   margin-bottom: 40px;
 }
 
-.hero-cards {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-  gap: 16px;
-  margin-top: 48px;
-}
-
-/* ── アップデートカード ── */
 .update-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -326,11 +272,7 @@ h2 {
   margin-bottom: 16px;
   transition: border-color 0.3s, transform 0.3s;
 }
-
-.update-card:hover {
-  border-color: var(--border2);
-  transform: translateY(-2px);
-}
+.update-card:hover { border-color: var(--border2); transform: translateY(-2px); }
 
 .update-header {
   display: flex;
@@ -341,7 +283,6 @@ h2 {
   cursor: pointer;
   user-select: none;
 }
-
 .version-tag {
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
@@ -352,7 +293,6 @@ h2 {
   padding: 3px 10px;
   border-radius: 100px;
 }
-
 .update-header h3 {
   font-family: 'Syne', sans-serif;
   font-size: 15px;
@@ -360,30 +300,17 @@ h2 {
   color: #fff;
   flex: 1;
 }
-
-.chevron {
-  color: var(--muted);
-  font-size: 12px;
-  transition: transform 0.3s;
-}
-
+.chevron { color: var(--muted); font-size: 12px; transition: transform 0.3s; }
 .update-card.open .chevron { transform: rotate(180deg); }
-
-.update-body {
-  display: none;
-  padding: 20px 24px;
-}
-
+.update-body { display: none; padding: 20px 24px; }
 .update-card.open .update-body { display: block; }
 
-/* アップデート画像 */
 .update-images {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 10px;
   margin-bottom: 16px;
 }
-
 .update-images img {
   width: 100%;
   aspect-ratio: 16/9;
@@ -393,16 +320,9 @@ h2 {
   cursor: pointer;
   transition: border-color 0.2s, transform 0.2s;
 }
+.update-images img:hover { border-color: var(--accent); transform: scale(1.02); }
 
-.update-images img:hover {
-  border-color: var(--accent);
-  transform: scale(1.02);
-}
-
-.update-list {
-  list-style: none;
-}
-
+.update-list { list-style: none; }
 .update-list li {
   display: flex;
   align-items: flex-start;
@@ -413,9 +333,7 @@ h2 {
   line-height: 1.6;
   border-bottom: 1px solid rgba(255,255,255,0.03);
 }
-
 .update-list li:last-child { border-bottom: none; }
-
 .update-list li::before {
   content: "→";
   color: var(--accent);
@@ -425,8 +343,6 @@ h2 {
   flex-shrink: 0;
 }
 
-
-/* ── アップデート画像 補助 ── */
 .update-img-label {
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
@@ -436,23 +352,11 @@ h2 {
   margin-bottom: 10px;
   margin-top: 4px;
 }
+.update-images--single { grid-template-columns: minmax(0, 480px); }
+.update-images--compare { grid-template-columns: repeat(2, 1fr); }
+@media (max-width: 600px) { .update-images--compare { grid-template-columns: 1fr; } }
 
-.update-images--single {
-  grid-template-columns: minmax(0, 480px);
-}
-
-.update-images--compare {
-  grid-template-columns: repeat(2, 1fr);
-}
-
-@media (max-width: 600px) {
-  .update-images--compare { grid-template-columns: 1fr; }
-}
-
-.compare-wrap {
-  position: relative;
-}
-
+.compare-wrap { position: relative; }
 .compare-label {
   position: absolute;
   top: 8px; left: 8px;
@@ -466,7 +370,6 @@ h2 {
   letter-spacing: 0.08em;
   pointer-events: none;
 }
-
 .compare-wrap img {
   width: 100%;
   aspect-ratio: 16/9;
@@ -477,19 +380,13 @@ h2 {
   transition: border-color 0.2s, transform 0.2s;
   display: block;
 }
+.compare-wrap img:hover { border-color: var(--accent); transform: scale(1.02); }
 
-.compare-wrap img:hover {
-  border-color: var(--accent);
-  transform: scale(1.02);
-}
-
-/* ── ロードマップ ── */
 .roadmap-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
   gap: 14px;
 }
-
 .roadmap-item {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -500,47 +397,18 @@ h2 {
   gap: 14px;
   transition: border-color 0.3s, transform 0.3s;
 }
+.roadmap-item:hover { border-color: var(--border2); transform: translateY(-2px); }
+.roadmap-item.done { opacity: 0.45; border-style: dashed; }
+.roadmap-item.done .roadmap-icon::after { content: " ✓"; font-size: 14px; color: #57F287; }
+.roadmap-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+.roadmap-item p { font-size: 14px; color: var(--text); line-height: 1.6; }
+.roadmap-item.done p { text-decoration: line-through; color: var(--muted); }
 
-.roadmap-item:hover {
-  border-color: var(--border2);
-  transform: translateY(-2px);
-}
-
-.roadmap-item.done {
-  opacity: 0.45;
-  border-style: dashed;
-}
-
-.roadmap-item.done .roadmap-icon::after {
-  content: " ✓";
-  font-size: 14px;
-  color: #57F287;
-}
-
-.roadmap-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-  margin-top: 2px;
-}
-
-.roadmap-item p {
-  font-size: 14px;
-  color: var(--text);
-  line-height: 1.6;
-}
-
-.roadmap-item.done p {
-  text-decoration: line-through;
-  color: var(--muted);
-}
-
-/* ── コマンド ── */
 .command-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
   gap: 12px;
 }
-
 .command-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -548,13 +416,11 @@ h2 {
   padding: 18px 20px;
   transition: border-color 0.3s, transform 0.3s;
 }
-
 .command-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
   box-shadow: 0 0 20px var(--glow);
 }
-
 .command-name {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
@@ -562,21 +428,14 @@ h2 {
   color: var(--accent2);
   margin-bottom: 6px;
 }
+.command-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
 
-.command-desc {
-  font-size: 13px;
-  color: var(--muted);
-  line-height: 1.5;
-}
-
-/* ── その他 ── */
 .other-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
   gap: 14px;
   margin-top: 12px;
 }
-
 .other-card {
   background: var(--surface);
   border: 1px solid var(--border);
@@ -586,12 +445,7 @@ h2 {
   display: block;
   transition: border-color 0.3s, transform 0.3s;
 }
-
-.other-card:hover {
-  border-color: var(--border2);
-  transform: translateY(-2px);
-}
-
+.other-card:hover { border-color: var(--border2); transform: translateY(-2px); }
 .other-card .card-title { margin-bottom: 4px; }
 
 .discord-wrap {
@@ -601,17 +455,10 @@ h2 {
   background: #111;
   margin-bottom: 14px;
 }
-
 .discord-wrap iframe { display: block; }
 
+.update-divider { border: none; border-top: 1px solid var(--border); margin: 20px 0; }
 
-/* ── アップデート内区切り ── */
-.update-divider {
-  border: none;
-  border-top: 1px solid var(--border);
-  margin: 20px 0;
-}
-/* ── ライトボックス ── */
 .lightbox {
   display: none;
   position: fixed;
@@ -622,9 +469,7 @@ h2 {
   justify-content: center;
   padding: 20px;
 }
-
 .lightbox.active { display: flex; }
-
 .lightbox img {
   max-width: 90vw;
   max-height: 85vh;
@@ -632,7 +477,6 @@ h2 {
   object-fit: contain;
   border: 1px solid var(--border2);
 }
-
 .lightbox-close {
   position: fixed;
   top: 20px; right: 24px;
@@ -642,10 +486,8 @@ h2 {
   line-height: 1;
   transition: color 0.2s;
 }
-
 .lightbox-close:hover { color: #fff; }
 
-/* ── フッター ── */
 footer {
   position: relative;
   z-index: 1;
@@ -657,19 +499,13 @@ footer {
   font-size: 12px;
 }
 
-/* ── スクロールアニメ ── */
 .fade-in {
   opacity: 0;
   transform: translateY(20px);
   transition: opacity 0.6s ease, transform 0.6s ease;
 }
+.fade-in.visible { opacity: 1; transform: translateY(0); }
 
-.fade-in.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
-
-/* ── レスポンシブ ── */
 @media (max-width: 768px) {
   section { padding: 100px 5% 60px; }
   .nav-links { display: none; }
@@ -680,7 +516,6 @@ footer {
   .command-grid { grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); }
   .other-grid { grid-template-columns: 1fr; }
 }
-
 @media (max-width: 480px) {
   .hero-title { font-size: 30px; }
   .roadmap-grid { grid-template-columns: 1fr; }
@@ -690,7 +525,6 @@ footer {
 
 <body>
 
-<!-- ナビ -->
 <nav>
   <div class="nav-logo">HGHome<span>Bot+</span></div>
   <div class="nav-links">
@@ -704,7 +538,6 @@ footer {
   </div>
 </nav>
 
-<!-- モバイルメニュー -->
 <div class="mobile-menu" id="mobileMenu">
   <a href="#home" onclick="closeMobile()">ホーム</a>
   <a href="#roadmap" onclick="closeMobile()">ロードマップ</a>
@@ -712,31 +545,68 @@ footer {
   <a href="#other" onclick="closeMobile()">その他</a>
 </div>
 
-<!-- ホーム -->
 <section id="home">
   <div class="fade-in">
-    <div class="hero-badge">v0.4 リリース済み</div>
+    <div class="hero-badge">v0.4.2 リリース済み</div>
     <h1 class="hero-title">ちょっと多機能な<br><span class="accent">管理 & カジノ</span><br>Discord Bot</h1>
     <p class="hero-sub">深夜テンションで作った…<br>ProBotのXP有料化をきっかけにXP機能が追加されました。</p>
     <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
   </div>
 
-  <!-- アップデート履歴 -->
   <div style="margin-top:64px;">
     <div class="section-header fade-in">
       <div class="section-label">// changelog</div>
       <h2>アップデート履歴</h2>
     </div>
 
-    <!-- v0.4 -->
+    <!-- v0.4.2 -->
     <div class="update-card open fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4.2</span>
+        <h3>ロールコマンド刷新・remove追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">ロールコマンド</p>
+        <ul class="update-list">
+          <li>/giverole を /role type: に統合・刷新</li>
+          <li>type は give（付与）/ remove（削除）から選択（Discord上でも選択肢表示）</li>
+          <li>ロールの付与・削除をひとつのコマンドで管理できるように</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.4.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4.1</span>
+        <h3>X（Twitter）通知機能追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">X 通知</p>
+        <ul class="update-list">
+          <li>Nitter RSS を利用した X（Twitter）新着ポスト通知を実装</li>
+          <li>ログイン・APIキー不要で動作</li>
+          <li>/set-x channel: type: で通知チャンネルと通知形式を設定</li>
+          <li>type は embed（内容も表示）/ link（URLのみ）から選択可能</li>
+          <li>/set-xaccount username: で監視アカウントを追加・削除（トグル式）</li>
+          <li>/x-list で監視中アカウントと現在の設定を一覧表示</li>
+          <li>5分ごとに自動チェック、複数インスタンスへのフォールバック対応</li>
+          <li>RT・リプライ・新規ポストを色分けで識別</li>
+          <li>設定は Firebase（guilds/id/x_channel・x_notify_type・x/）に保存</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.4 -->
+    <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v0.4</span>
         <h3>管理強化・ロールボタン・サーバー統計</h3>
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-
         <p class="update-img-label">管理コマンド</p>
         <ul class="update-list" style="margin-bottom:20px;">
           <li>/kick を追加。理由を任意で指定可能、自分自身へのキックは不可</li>
@@ -771,7 +641,6 @@ footer {
           <li>type は daily / weekly / monthly から選択（Discord上でも選択肢表示）</li>
           <li>クールダウン残り時間の表示を日・時間・分・秒で統一</li>
         </ul>
-
       </div>
     </div>
 
@@ -809,9 +678,7 @@ footer {
           <li>逆所持金ランキング（ワースト）を追加</li>
           <li>合計資産ランキングにドル換算が反映されていないバグを修正</li>
         </ul>
-
         <div class="update-divider"></div>
-
         <p class="update-img-label">コイン関連アップデート</p>
         <ul class="update-list">
           <li>/steal の罰金を「盗む予定だった金額の1/10」に変更</li>
@@ -846,9 +713,6 @@ footer {
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-        <div class="update-images">
-          <!-- <img src="image/v02_screenshot1.png" alt="v0.2 スクリーンショット" onclick="openLightbox(this.src)"> -->
-        </div>
         <ul class="update-list">
           <li>Botが起動しない問題を修正</li>
           <li>XPレベリング機能を実装</li>
@@ -867,9 +731,6 @@ footer {
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-        <div class="update-images">
-          <!-- <img src="image/v01_screenshot1.png" alt="v0.1 スクリーンショット" onclick="openLightbox(this.src)"> -->
-        </div>
         <ul class="update-list">
           <li>Youtube検索機能</li>
           <li>ロール付与・タイムアウト</li>
@@ -877,6 +738,7 @@ footer {
         </ul>
       </div>
     </div>
+
   </div>
 </section>
 
@@ -910,9 +772,12 @@ footer {
     <div class="command-card fade-in"><div class="command-name">/timeout</div><div class="command-desc">ユーザーをタイムアウト</div></div>
     <div class="command-card fade-in"><div class="command-name">/kick</div><div class="command-desc">ユーザーをキック</div></div>
     <div class="command-card fade-in"><div class="command-name">/ban</div><div class="command-desc">ユーザーをBAN</div></div>
-    <div class="command-card fade-in"><div class="command-name">/giverole</div><div class="command-desc">ユーザーにロールを付与</div></div>
+    <div class="command-card fade-in"><div class="command-name">/role type:</div><div class="command-desc">ロールの付与・削除（give / remove）</div></div>
     <div class="command-card fade-in"><div class="command-name">/role-button</div><div class="command-desc">ロール付与ボタン付きメッセージを投稿</div></div>
     <div class="command-card fade-in"><div class="command-name">/set-server</div><div class="command-desc">サーバー統計レポートの送信先を設定</div></div>
+    <div class="command-card fade-in"><div class="command-name">/set-x</div><div class="command-desc">X通知チャンネルと通知形式を設定</div></div>
+    <div class="command-card fade-in"><div class="command-name">/set-xaccount</div><div class="command-desc">監視するXアカウントを追加・削除</div></div>
+    <div class="command-card fade-in"><div class="command-name">/x-list</div><div class="command-desc">監視中のXアカウント一覧を表示</div></div>
     <div class="command-card fade-in"><div class="command-name">@HGHomeBot+</div><div class="command-desc">AIに質問</div></div>
     <div class="command-card fade-in"><div class="command-name">/work</div><div class="command-desc">働いてコイン獲得</div></div>
     <div class="command-card fade-in"><div class="command-name">/steal</div><div class="command-desc">他ユーザーから盗む</div></div>
@@ -959,14 +824,12 @@ footer {
 
 <footer>© 2026 HGHome Official</footer>
 
-<!-- ライトボックス -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
   <div class="lightbox-close" onclick="closeLightbox()">✕</div>
   <img id="lightboxImg" src="" alt="">
 </div>
 
 <script>
-// ハンバーガーメニュー
 const hamburger = document.getElementById('hamburger');
 const mobileMenu = document.getElementById('mobileMenu');
 
@@ -980,13 +843,11 @@ function closeMobile() {
   mobileMenu.classList.remove('open');
 }
 
-// アップデートアコーディオン
 function toggleUpdate(header) {
   const card = header.closest('.update-card');
   card.classList.toggle('open');
 }
 
-// ライトボックス
 function openLightbox(src) {
   document.getElementById('lightboxImg').src = src;
   document.getElementById('lightbox').classList.add('active');
@@ -996,7 +857,6 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('active');
 }
 
-// スクロールフェードイン
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((e, i) => {
     if (e.isIntersecting) {
