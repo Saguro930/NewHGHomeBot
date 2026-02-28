@@ -43,6 +43,7 @@ async def setup(bot, db):
     from program.xp import XP
     from program.count import Count
     from program.welcome import Welcome
+    from program.server.server import Server
     
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -60,7 +61,8 @@ async def setup(bot, db):
     await bot.add_cog(Count(bot, db))
     await bot.add_cog(Welcome(bot, db))
     await bot.add_cog(RoleButton(bot,db))
-
+    await bot.add_cog(Server(bot,db))
+    
 async def run_bot():
     await setup(bot, db)
     await bot.start(TOKEN)
