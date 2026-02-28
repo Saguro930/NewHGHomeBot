@@ -5,7 +5,7 @@ import random
 import io
 from PIL import Image, ImageDraw, ImageFont
 
-# ── タイル色定義（完全版）────────────────────────────────────────
+# ── タイル色定義 ──────────────────────────────────────────────────
 TILE_BG = {
     0:    (205, 193, 180),
     2:    (238, 228, 218),
@@ -22,9 +22,9 @@ TILE_BG = {
 }
 
 TILE_FG = {
-    2:   (119, 110, 101),
-    4:   (119, 110, 101),
-}  # 2・4は暗い文字、それ以外は白
+    2: (119, 110, 101),
+    4: (119, 110, 101),
+}
 
 FONT_PATHS = [
     "/usr/share/fonts/truetype/liberation/LiberationSans-Bold.ttf",
@@ -41,6 +41,7 @@ def get_font(size):
     return ImageFont.load_default()
 
 
+# ── ゲームロジック ────────────────────────────────────────────────
 class GameBoard:
     def __init__(self):
         self.board = [[0] * 4 for _ in range(4)]
@@ -71,16 +72,13 @@ class GameBoard:
 
         if direction == "left":
             self.board = [self.merge(row) for row in self.board]
-
         elif direction == "right":
             self.board = [self.merge(row[::-1])[::-1] for row in self.board]
-
         elif direction == "up":
             for c in range(4):
                 col = self.merge([self.board[r][c] for r in range(4)])
                 for r in range(4):
                     self.board[r][c] = col[r]
-
         elif direction == "down":
             for c in range(4):
                 col = self.merge([self.board[r][c] for r in range(4)][::-1])[::-1]
@@ -110,10 +108,9 @@ class GameBoard:
 
 
 # ── 画像描画 ──────────────────────────────────────────────────────
-
-CELL  = 100
-PAD   = 12
-SIZE  = CELL * 4 + PAD * 5   # 452px
+CELL = 100
+PAD  = 12
+SIZE = CELL * 4 + PAD * 5  # 452px
 
 def draw_board(board: list, score: int, best: int) -> discord.File:
     img  = Image.new("RGB", (SIZE, SIZE + 70), (187, 173, 160))
@@ -122,24 +119,23 @@ def draw_board(board: list, score: int, best: int) -> discord.File:
     # スコア帯
     draw.rectangle([0, 0, SIZE, 66], fill=(143, 122, 102))
     sf = get_font(22)
-    draw.text((16, 10), f"SCORE",  fill=(238, 228, 218), font=sf)
-    draw.text((16, 36), f"{score:,}", fill=(255, 255, 255), font=get_font(26))
-    draw.text((SIZE - 120, 10), "BEST",       fill=(238, 228, 218), font=sf)
-    draw.text((SIZE - 120, 36), f"{best:,}",  fill=(255, 255, 255), font=get_font(26))
+    draw.text((16, 10),          "SCORE",      fill=(238, 228, 218), font=sf)
+    draw.text((16, 36),          f"{score:,}", fill=(255, 255, 255), font=get_font(26))
+    draw.text((SIZE - 120, 10),  "BEST",       fill=(238, 228, 218), font=sf)
+    draw.text((SIZE - 120, 36),  f"{best:,}",  fill=(255, 255, 255), font=get_font(26))
 
     # タイル
     for r in range(4):
         for c in range(4):
             val = board[r][c]
-            x = PAD + c * (CELL + PAD)
-            y = 70 + PAD + r * (CELL + PAD)
-            bg = TILE_BG.get(val, (60, 58, 50))
+            x   = PAD + c * (CELL + PAD)
+            y   = 70 + PAD + r * (CELL + PAD)
+            bg  = TILE_BG.get(val, (60, 58, 50))
             draw.rounded_rectangle([x, y, x + CELL, y + CELL], radius=8, fill=bg)
 
             if val != 0:
                 text = str(val)
                 fg   = TILE_FG.get(val, (255, 255, 255))
-                # 桁数に応じてフォントサイズ調整
                 fs   = 44 if len(text) <= 2 else (36 if len(text) == 3 else 28)
                 font = get_font(fs)
                 bbox = draw.textbbox((0, 0), text, font=font)
@@ -157,10 +153,9 @@ def draw_board(board: list, score: int, best: int) -> discord.File:
 
 
 # ── View ─────────────────────────────────────────────────────────
-
 class ControlView(discord.ui.View):
     def __init__(self, cog, user_id: int, game: GameBoard):
-        super().__init__(timeout=300)
+        super().__init__(timeout=120)  # 2分
         self.cog     = cog
         self.user_id = user_id
         self.game    = game
@@ -188,35 +183,39 @@ class ControlView(discord.ui.View):
         embed.set_image(url="attachment://2048.png")
         return embed
 
-    async def _move(self, interaction: discord.Interaction, direction: str):
-        changed = self.game.move(direction)
-        if not changed:
-            await interaction.response.defer()
-            return
-
-        file = draw_board(self.game.board, self.game.score, self.game.best)
-
-        if self.game.has_won():
-            self._disable_arrows()
-            await interaction.response.edit_message(
-                embed=self.make_embed("won"), attachments=[file], view=self
-            )
-        elif self.game.is_game_over():
-            self._disable_arrows()
-            await interaction.response.edit_message(
-                embed=self.make_embed("over"), attachments=[file], view=self
-            )
-        else:
-            await interaction.response.edit_message(
-                embed=self.make_embed(), attachments=[file], view=self
-            )
-
     def _disable_arrows(self):
         for child in self.children:
             if isinstance(child, discord.ui.Button) and child.custom_id != "restart":
                 child.disabled = True
 
-    # ── レイアウト ──
+    async def _move(self, interaction: discord.Interaction, direction: str):
+        await interaction.response.defer()
+
+        changed = self.game.move(direction)
+        if not changed:
+            return
+
+        loop = interaction.client.loop
+        file = await loop.run_in_executor(
+            None, draw_board, self.game.board, self.game.score, self.game.best
+        )
+
+        if self.game.has_won():
+            self._disable_arrows()
+            await interaction.edit_original_response(
+                embed=self.make_embed("won"), attachments=[file], view=self
+            )
+        elif self.game.is_game_over():
+            self._disable_arrows()
+            await interaction.edit_original_response(
+                embed=self.make_embed("over"), attachments=[file], view=self
+            )
+        else:
+            await interaction.edit_original_response(
+                embed=self.make_embed(), attachments=[file], view=self
+            )
+
+    # ── ボタン配置 ──
     # Row 0: [　] [↑] [　]
     # Row 1: [←] [↓] [→]
     # Row 2: [　] [🔄] [　]
@@ -248,15 +247,22 @@ class ControlView(discord.ui.View):
 
     @discord.ui.button(label="🔄", style=discord.ButtonStyle.danger, custom_id="restart", row=2)
     async def restart(self, interaction: discord.Interaction, _):
+        await interaction.response.defer()
+
         best = self.game.best
         self.game = GameBoard()
         self.game.best = best
         self.cog.games[self.user_id] = self.game
+
         for child in self.children:
-            if isinstance(child, discord.ui.Button) and child.label not in ("　", ""):
+            if isinstance(child, discord.ui.Button) and child.label != "　":
                 child.disabled = False
-        file = draw_board(self.game.board, self.game.score, self.game.best)
-        await interaction.response.edit_message(
+
+        loop = interaction.client.loop
+        file = await loop.run_in_executor(
+            None, draw_board, self.game.board, self.game.score, self.game.best
+        )
+        await interaction.edit_original_response(
             embed=self.make_embed(), attachments=[file], view=self
         )
 
@@ -269,7 +275,6 @@ class ControlView(discord.ui.View):
 
 
 # ── Cog ──────────────────────────────────────────────────────────
-
 class Game2048(commands.Cog):
     def __init__(self, bot):
         self.bot   = bot
@@ -277,13 +282,17 @@ class Game2048(commands.Cog):
 
     @app_commands.command(name="2048", description="2048ゲームを開始します")
     async def start_2048(self, interaction: discord.Interaction):
+        await interaction.response.defer()
+
         game = GameBoard()
         self.games[interaction.user.id] = game
         view = ControlView(self, interaction.user.id, game)
-        file = draw_board(game.board, game.score, game.best)
-        await interaction.response.send_message(
-            embed=view.make_embed(), file=file, view=view
+
+        loop = interaction.client.loop
+        file = await loop.run_in_executor(
+            None, draw_board, game.board, game.score, game.best
         )
+        await interaction.followup.send(embed=view.make_embed(), file=file, view=view)
 
 
 async def setup(bot):
