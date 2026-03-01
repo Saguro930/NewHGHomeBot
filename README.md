@@ -1,4 +1,4 @@
-# 📢 HGHomeBot+ v0.3
+# 📢 HGHomeBot+ v0.5.3
 HGHomeBotをより便利にした多機能Botです
 
 ---
