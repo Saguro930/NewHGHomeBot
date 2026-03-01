@@ -75,10 +75,8 @@
         <p class="update-img-label">サイト全面リニューアル</p>
         <ul class="update-list">
           <li>サイトを全面リニューアル。HTML / CSS を完全分離（index.html + style.css）</li>
-          <li>ダークモード / ホワイトモード切り替え機能を追加。設定はブラウザに保存（localStorage）</li>
+          <li>ダークモード / ホワイトモード切り替え機能を追加。</li>
           <li>ナビバーにトグルスイッチ＋絵文字（🌙 / ☀️）を設置。デフォルトはダークモード</li>
-          <li>背景に3層の放射グラデーション mesh を追加し、全体的な視覚演出を強化</li>
-          <li>ヒーロータイトルをグラデーションテキスト化（blue → indigo → violet）</li>
         </ul>
         <div class="update-divider"></div>
         <p class="update-img-label">コマンド一覧をカテゴリ別に分類</p>
@@ -97,7 +95,7 @@
         <div class="update-divider"></div>
         <p class="update-img-label">カウント — メッセージ削除対応</p>
         <ul class="update-list">
-          <li>カウントのメッセージも削除しても自動で削除を通知するように</li>
+          <li>カウントのメッセージに対応</li>
         </ul>
       </div>
     </div>
@@ -543,7 +541,16 @@
   </div>
 </section>
 
-<footer>© 2026 HGHome Official &nbsp;·&nbsp; v1.0.0</footer>
+<footer>
+  <div class="footer-counter">
+    <img
+      src="https://count.getloli.com/@HGHome?name=HGHome&theme=miku&padding=7&offset=0&align=top&scale=1&pixelated=1&darkmode=auto"
+      alt="visitor counter"
+      class="counter-img"
+    >
+  </div>
+  <div class="footer-copy">© 2026 HGHome Official &nbsp;·&nbsp; v1.0.0</div>
+</footer>
 
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
