@@ -19,18 +19,23 @@ JST = timezone(timedelta(hours=9))
 
 class Server(commands.Cog):
     def __init__(self, bot, db):
-        self.bot    = bot
-        self.db     = db
+        self.bot = bot
+        self.db = db
         self._cache: dict[int, dict] = {}
-        self._dirty: set[int]        = set()
+        self._dirty: set[int] = set()
+
         self.flush_cache.start()
         self.daily_report.start()
+        self.weekly_report.start()
+        self.monthly_report.start()
 
     def cog_unload(self):
         self.flush_cache.cancel()
         self.daily_report.cancel()
+        self.weekly_report.cancel()
+        self.monthly_report.cancel()
 
-    # ─── Firestore 参照 ───────────────────────────────────────────
+    # ─── Firestore ─────────────────────────────
 
     def get_server_ref(self, guild_id: int, date_str: str):
         return (
@@ -43,69 +48,62 @@ class Server(commands.Cog):
     def get_channel_ref(self, guild_id: int):
         return self.db.collection("guilds").document(str(guild_id))
 
-    def today_str(self) -> str:
+    def today_str(self):
         return datetime.now(JST).strftime("%Y-%m-%d")
 
-    def yesterday_str(self) -> str:
+    def yesterday_str(self):
         return (datetime.now(JST) - timedelta(days=1)).strftime("%Y-%m-%d")
 
-    # ─── キャッシュ操作 ───────────────────────────────────────────
+    # ─── キャッシュ ─────────────────────────────
 
-    def _get_cache(self, guild_id: int) -> dict:
-        """キャッシュから今日のデータを取得。なければFirestoreから読み込む（初回のみ）"""
+    def _get_cache(self, guild_id: int):
         today = self.today_str()
         if guild_id not in self._cache:
             doc = self.get_server_ref(guild_id, today).get()
-            if doc.exists:
-                self._cache[guild_id] = doc.to_dict()
-            else:
-                self._cache[guild_id] = {
-                    "date":          today,
-                    "message_count": 0,
-                    "member_join":   0,
-                    "member_leave":  0,
-                    "reactions":     {},
-                }
+            self._cache[guild_id] = doc.to_dict() if doc.exists else {
+                "date": today,
+                "message_count": 0,
+                "member_join": 0,
+                "member_leave": 0,
+                "reactions": {}
+            }
         return self._cache[guild_id]
 
     def _mark_dirty(self, guild_id: int):
         self._dirty.add(guild_id)
 
     def _reset_cache_if_new_day(self, guild_id: int):
-        cached = self._cache.get(guild_id, {})
-        if cached.get("date") != self.today_str():
+        cached = self._cache.get(guild_id)
+        if cached and cached.get("date") != self.today_str():
             self._cache.pop(guild_id, None)
 
-    # ─── 1分ごとにFirestoreへ書き込み ────────────────────────────
+    # ─── Firestore flush ───────────────────────
 
     @tasks.loop(minutes=1)
     async def flush_cache(self):
         if not self._dirty:
             return
 
-        today          = self.today_str()
-        flush_targets  = self._dirty.copy()
+        today = self.today_str()
+        targets = self._dirty.copy()
         self._dirty.clear()
 
-        for guild_id in flush_targets:
-            data = self._cache.get(guild_id)
+        for gid in targets:
+            data = self._cache.get(gid)
             if data:
                 try:
-                    self.get_server_ref(guild_id, today).set(data)
-                except Exception as e:
-                    print(f"[Server] flush失敗 guild={guild_id}: {e}")
-                    self._dirty.add(guild_id)  # 失敗したら次回リトライ
-
-        print(f"[Server] Firestore flush完了 ({len(flush_targets)}サーバー)")
+                    self.get_server_ref(gid, today).set(data)
+                except Exception:
+                    self._dirty.add(gid)
 
     @flush_cache.before_loop
     async def before_flush(self):
         await self.bot.wait_until_ready()
 
-    # ─── イベントリスナー（Firestoreアクセスなし）────────────────
+    # ─── イベント ─────────────────────────────
 
     @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
+    async def on_message(self, message):
         if message.author.bot or not message.guild:
             return
         self._reset_cache_if_new_day(message.guild.id)
@@ -114,219 +112,207 @@ class Server(commands.Cog):
         self._mark_dirty(message.guild.id)
 
     @commands.Cog.listener()
-    async def on_member_join(self, member: discord.Member):
+    async def on_member_join(self, member):
         self._reset_cache_if_new_day(member.guild.id)
         data = self._get_cache(member.guild.id)
         data["member_join"] += 1
         self._mark_dirty(member.guild.id)
 
     @commands.Cog.listener()
-    async def on_member_remove(self, member: discord.Member):
+    async def on_member_remove(self, member):
         self._reset_cache_if_new_day(member.guild.id)
         data = self._get_cache(member.guild.id)
         data["member_leave"] += 1
         self._mark_dirty(member.guild.id)
 
     @commands.Cog.listener()
-    async def on_reaction_add(self, reaction: discord.Reaction, user: discord.User):
+    async def on_reaction_add(self, reaction, user):
         if user.bot or not reaction.message.guild:
             return
         self._reset_cache_if_new_day(reaction.message.guild.id)
-        data      = self._get_cache(reaction.message.guild.id)
-        emoji_str = str(reaction.emoji)
-        reactions = data.get("reactions", {})
-        reactions[emoji_str] = reactions.get(emoji_str, 0) + 1
-        data["reactions"] = reactions
+        data = self._get_cache(reaction.message.guild.id)
+        emoji = str(reaction.emoji)
+        data["reactions"][emoji] = data["reactions"].get(emoji, 0) + 1
         self._mark_dirty(reaction.message.guild.id)
 
     @commands.Cog.listener()
-    async def on_reaction_remove(self, reaction: discord.Reaction, user: discord.User):
+    async def on_reaction_remove(self, reaction, user):
         if user.bot or not reaction.message.guild:
             return
         self._reset_cache_if_new_day(reaction.message.guild.id)
-        data      = self._get_cache(reaction.message.guild.id)
-        emoji_str = str(reaction.emoji)
-        reactions = data.get("reactions", {})
-        current   = reactions.get(emoji_str, 0)
-        if current > 1:
-            reactions[emoji_str] = current - 1
-        elif current == 1:
-            del reactions[emoji_str]
-        data["reactions"] = reactions
+        data = self._get_cache(reaction.message.guild.id)
+        emoji = str(reaction.emoji)
+        if emoji in data["reactions"]:
+            if data["reactions"][emoji] <= 1:
+                del data["reactions"][emoji]
+            else:
+                data["reactions"][emoji] -= 1
         self._mark_dirty(reaction.message.guild.id)
 
-    # ─── 線グラフ生成 ─────────────────────────────────────────────
+    # ─── 共通集計 ─────────────────────────────
 
-    def generate_graph(self, guild_id: int) -> io.BytesIO | None:
-        if not MATPLOTLIB_AVAILABLE:
-            return None
+    def aggregate_period(self, guild_id: int, days: int):
+        start = (datetime.now(JST) - timedelta(days=days)).strftime("%Y-%m-%d")
 
         docs = (
             self.db.collection("guilds")
             .document(str(guild_id))
             .collection("server")
-            .order_by("date")
-            .limit(30)
+            .where("date", ">=", start)
             .stream()
         )
 
-        records = [d.to_dict() for d in docs]
-        if len(records) < 2:
-            return None
+        total_msg = total_join = total_leave = 0
+        emoji_counter = {}
+        max_day = None
+        max_msg = 0
+        day_count = 0
 
-        dates    = [datetime.strptime(r["date"], "%Y-%m-%d") for r in records]
-        messages = [r.get("message_count", 0) for r in records]
-        joins    = [r.get("member_join", 0)   for r in records]
-        leaves   = [r.get("member_leave", 0)  for r in records]
+        for d in docs:
+            data = d.to_dict()
+            msg = data.get("message_count", 0)
 
-        fig, ax1 = plt.subplots(figsize=(10, 4))
-        fig.patch.set_facecolor("#2b2d31")
-        ax1.set_facecolor("#2b2d31")
+            total_msg += msg
+            total_join += data.get("member_join", 0)
+            total_leave += data.get("member_leave", 0)
 
-        ax1.plot(dates, messages, color="#5865F2", linewidth=2, marker="o", markersize=4, label="メッセージ数")
-        ax1.set_ylabel("メッセージ数", color="#dcddde")
-        ax1.tick_params(axis="y", labelcolor="#dcddde")
-        ax1.tick_params(axis="x", labelcolor="#dcddde", rotation=30)
-        ax1.xaxis.set_major_formatter(mdates.DateFormatter("%m/%d"))
-        ax1.xaxis.set_major_locator(mdates.DayLocator(interval=max(1, len(dates) // 10)))
+            if msg > max_msg:
+                max_msg = msg
+                max_day = data.get("date")
 
-        ax2 = ax1.twinx()
-        ax2.plot(dates, joins,  color="#57F287", linewidth=2, marker="^", markersize=4, label="参加")
-        ax2.plot(dates, leaves, color="#ED4245", linewidth=2, marker="v", markersize=4, label="退出")
-        ax2.set_ylabel("メンバー数", color="#dcddde")
-        ax2.tick_params(axis="y", labelcolor="#dcddde")
+            for e, c in data.get("reactions", {}).items():
+                emoji_counter[e] = emoji_counter.get(e, 0) + c
 
-        lines1, labels1 = ax1.get_legend_handles_labels()
-        lines2, labels2 = ax2.get_legend_handles_labels()
-        ax1.legend(lines1 + lines2, labels1 + labels2, facecolor="#40444b", labelcolor="#dcddde", loc="upper left")
+            day_count += 1
 
-        for spine in ax1.spines.values():
-            spine.set_edgecolor("#40444b")
-        for spine in ax2.spines.values():
-            spine.set_edgecolor("#40444b")
+        avg_msg = round(total_msg / day_count) if day_count else 0
 
-        plt.title("過去30日間のサーバー統計", color="#dcddde", pad=10)
-        plt.tight_layout()
+        if emoji_counter:
+            top5 = sorted(emoji_counter.items(), key=lambda x: x[1], reverse=True)[:5]
+            emoji_rank = "\n".join(
+                f"{i+1}. {e}：{c}回" for i, (e, c) in enumerate(top5)
+            )
+        else:
+            emoji_rank = "なし"
 
-        buf = io.BytesIO()
-        plt.savefig(buf, format="png", dpi=120, facecolor=fig.get_facecolor())
-        plt.close(fig)
-        buf.seek(0)
-        return buf
+        active_day = f"{max_day}（{max_msg}件）" if max_day else "なし"
 
-    # ─── 毎日0時にレポート送信 ───────────────────────────────────
+        return {
+            "total_msg": total_msg,
+            "avg_msg": avg_msg,
+            "join": total_join,
+            "leave": total_leave,
+            "emoji_rank": emoji_rank,
+            "active_day": active_day
+        }
+
+    # ─── デイリー ─────────────────────────────
 
     @tasks.loop(time=datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0).timetz())
     async def daily_report(self):
-        now_jst    = datetime.now(JST)
-        date_label = (now_jst - timedelta(days=1)).strftime("%m/%d")
-        yesterday  = self.yesterday_str()
+        now = datetime.now(JST)
+        yesterday = self.yesterday_str()
 
         for guild in self.bot.guilds:
             doc = self.get_channel_ref(guild.id).get()
-            if not doc.exists:
-                continue
-            channel_id = doc.to_dict().get("server_channel")
-            if not channel_id:
-                continue
-            channel = guild.get_channel(int(channel_id))
+            channel_id = doc.to_dict().get("server_channel") if doc.exists else None
+            channel = guild.get_channel(int(channel_id)) if channel_id else None
             if not channel:
                 continue
 
-            # キャッシュから直接取得（Firestore読み込み不要）
-            data = self._cache.get(guild.id)
-            if not data:
-                # キャッシュがない場合のみFirestoreから読む（念のため）
-                data_doc = self.get_server_ref(guild.id, yesterday).get()
-                data = data_doc.to_dict() if data_doc.exists else {}
+            data = self._cache.get(guild.id) or {}
+            reactions = data.get("reactions", {})
 
-            msg_count   = data.get("message_count", 0)
-            join_count  = data.get("member_join", 0)
-            leave_count = data.get("member_leave", 0)
-            reactions   = data.get("reactions", {})
-            net_member  = join_count - leave_count
-
-            top_emoji = (
-                max(reactions, key=reactions.get) + f"（{reactions[max(reactions, key=reactions.get)]}回）"
-                if reactions else "なし"
-            )
-
-            if net_member > 0:
-                member_str = f"+{net_member}人（参加 {join_count}人 / 退出 {leave_count}人）"
-            elif net_member < 0:
-                member_str = f"{net_member}人（参加 {join_count}人 / 退出 {leave_count}人）"
+            if reactions:
+                top3 = sorted(reactions.items(), key=lambda x: x[1], reverse=True)[:3]
+                top_emoji = "\n".join(f"{e}：{c}回" for e, c in top3)
             else:
-                member_str = f"増減なし（参加 {join_count}人 / 退出 {leave_count}人）"
+                top_emoji = "なし"
 
             embed = discord.Embed(
-                title=f"📊 {guild.name} デイリーレポート",
-                description=f"**{date_label}** に送信された統計です",
+                title="📊 デイリーレポート",
+                description=f"{yesterday} の統計",
                 color=discord.Color.blurple(),
-                timestamp=now_jst
+                timestamp=now
             )
-            embed.add_field(name="💬 メッセージ数",    value=f"{msg_count} 件", inline=True)
-            embed.add_field(name="👥 メンバー増減",    value=member_str,        inline=True)
-            embed.add_field(name="🏆 最多リアクション", value=top_emoji,         inline=True)
-            embed.set_footer(text="毎日0時に集計")
+            embed.add_field(name="💬 メッセージ数", value=f"{data.get('message_count',0)} 件")
+            embed.add_field(
+                name="👥 メンバー増減",
+                value=f"{data.get('member_join',0)-data.get('member_leave',0)} 人"
+            )
+            embed.add_field(name="🏆 リアクション Top3", value=top_emoji, inline=False)
 
-            graph_buf = self.generate_graph(guild.id)
-            if graph_buf:
-                file = discord.File(graph_buf, filename="stats.png")
-                embed.set_image(url="attachment://stats.png")
-                await channel.send(embed=embed, file=file)
-            else:
-                await channel.send(embed=embed)
+            await channel.send(embed=embed)
 
-        # レポート送信後にflush＆キャッシュクリア
-        for guild_id, data in self._cache.items():
-            try:
-                self.get_server_ref(guild_id, yesterday).set(data)
-            except Exception as e:
-                print(f"[Server] daily flush失敗 guild={guild_id}: {e}")
-
-        self._dirty.clear()
         self._cache.clear()
+        self._dirty.clear()
 
-    @daily_report.before_loop
-    async def before_daily_report(self):
-        await self.bot.wait_until_ready()
+    # ─── 週間 ─────────────────────────────
 
-    # ─── /set-server コマンド ────────────────────────────────────
+    @tasks.loop(time=datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0).timetz())
+    async def weekly_report(self):
+        if datetime.now(JST).weekday() != 6:
+            return
 
-    @app_commands.command(
-        name="set-server",
-        description="デイリーレポートを送信するチャンネルを設定します"
-    )
-    @app_commands.describe(channel="レポートを送信するチャンネル")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_server(
-        self,
-        interaction: discord.Interaction,
-        channel: discord.TextChannel
-    ):
-        self.get_channel_ref(interaction.guild.id).set(
-            {"server_channel": channel.id},
-            merge=True
-        )
-        await interaction.response.send_message(
-            f"✅ デイリーレポートの送信先を {channel.mention} に設定しました。",
-            ephemeral=True
-        )
+        for guild in self.bot.guilds:
+            doc = self.get_channel_ref(guild.id).get()
+            channel_id = doc.to_dict().get("server_channel") if doc.exists else None
+            channel = guild.get_channel(int(channel_id)) if channel_id else None
+            if not channel:
+                continue
 
-    @set_server.error
-    async def set_server_error(
-        self,
-        interaction: discord.Interaction,
-        error: app_commands.AppCommandError
-    ):
-        if isinstance(error, app_commands.MissingPermissions):
-            await interaction.response.send_message(
-                "❌ このコマンドは管理者のみ使用できます。",
-                ephemeral=True
+            stats = self.aggregate_period(guild.id, 7)
+
+            embed = discord.Embed(
+                title="📅 週間サーバーレポート",
+                color=discord.Color.green(),
+                timestamp=datetime.now(JST)
             )
+            embed.add_field(name="💬 総メッセージ数", value=f"{stats['total_msg']} 件")
+            embed.add_field(name="📈 1日平均", value=f"{stats['avg_msg']} 件/日")
+            embed.add_field(name="🔥 今週一番アクティブだった日", value=stats["active_day"], inline=False)
+            embed.add_field(name="🏅 絵文字ランキング Top5", value=stats["emoji_rank"], inline=False)
 
+            await channel.send(embed=embed)
 
-# ─── Cog登録 ──────────────────────────────────────────────────────
+    # ─── 月間 ─────────────────────────────
+
+    @tasks.loop(time=datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0).timetz())
+    async def monthly_report(self):
+        if datetime.now(JST).day != 1:
+            return
+
+        for guild in self.bot.guilds:
+            doc = self.get_channel_ref(guild.id).get()
+            channel_id = doc.to_dict().get("server_channel") if doc.exists else None
+            channel = guild.get_channel(int(channel_id)) if channel_id else None
+            if not channel:
+                continue
+
+            stats = self.aggregate_period(guild.id, 30)
+
+            embed = discord.Embed(
+                title="🗓 月間サーバーレポート",
+                color=discord.Color.orange(),
+                timestamp=datetime.now(JST)
+            )
+            embed.add_field(name="💬 総メッセージ数", value=f"{stats['total_msg']} 件")
+            embed.add_field(name="📈 1日平均", value=f"{stats['avg_msg']} 件/日")
+            embed.add_field(name="🔥 今月一番アクティブだった日", value=stats["active_day"], inline=False)
+            embed.add_field(name="🏆 絵文字ランキング Top5", value=stats["emoji_rank"], inline=False)
+
+            await channel.send(embed=embed)
+
+    # ─── コマンド ─────────────────────────────
+
+    @app_commands.command(name="set-server", description="統計レポート送信チャンネルを設定")
+    @app_commands.checks.has_permissions(administrator=True)
+    async def set_server(self, interaction: discord.Interaction, channel: discord.TextChannel):
+        self.get_channel_ref(interaction.guild.id).set(
+            {"server_channel": channel.id}, merge=True
+        )
+        await interaction.response.send_message("✅ 設定しました", ephemeral=True)
+
 
 async def setup(bot, db):
     await bot.add_cog(Server(bot, db))
