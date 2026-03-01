@@ -26,7 +26,7 @@ class SetChannel(commands.Cog):
     async def set_channel(
         self,
         interaction: discord.Interaction,
-        type: Literal["count", "welcome", "x"],
+        type: Literal["count", "welcome", "x", "server", "levelup", "xpnews"],
         channel: discord.TextChannel,
     ):
         guild_id = interaction.guild.id
@@ -64,6 +64,37 @@ class SetChannel(commands.Cog):
             )
             await interaction.response.send_message(
                 f"✅ X通知チャンネルを {channel.mention} に設定しました",
+                ephemeral=True,
+            )
+
+        elif type == "server":
+            ref.set(
+                {"server_channel": channel.id},
+                merge=True,
+            )
+            await interaction.response.send_message(
+                f"✅ サーバー統計レポートチャンネルを {channel.mention} に設定しました",
+                ephemeral=True,
+            )
+
+        elif type == "levelup":
+            ref.set(
+                {"level_up_channel": str(channel.id)},
+                merge=True,
+            )
+            await interaction.response.send_message(
+                f"✅ レベルアップ通知チャンネルを {channel.mention} に設定しました",
+                ephemeral=True,
+            )
+
+        elif type == "xpnews":
+            ref.set(
+                {"xpnews_channel": str(channel.id)},
+                merge=True,
+            )
+            await interaction.response.send_message(
+                f"✅ XPニュースチャンネルを {channel.mention} に設定しました\n"
+                f"📰 毎日0時にTop3を発表します。",
                 ephemeral=True,
             )
 
