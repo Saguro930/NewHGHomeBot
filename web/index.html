@@ -43,7 +43,7 @@
   <div class="fade-in">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      v0.5.3 リリース済み
+      v1.0.0 リリース済み
     </div>
     <h1 class="hero-title">
       ちょっと多機能な<br>
@@ -64,10 +64,48 @@
       <h2>アップデート履歴</h2>
     </div>
 
-    <!-- v0.5.3 LATEST -->
+    <!-- v1.0.0 LATEST -->
     <div class="update-card latest open fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
-        <span class="version-tag new">v0.5.3</span>
+        <span class="version-tag new">v1.0.0</span>
+        <h3>メジャーアップデート・サイトリニューアル・各種機能強化</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">サイト全面リニューアル</p>
+        <ul class="update-list">
+          <li>サイトを全面リニューアル。HTML / CSS を完全分離（index.html + style.css）</li>
+          <li>ダークモード / ホワイトモード切り替え機能を追加。設定はブラウザに保存（localStorage）</li>
+          <li>ナビバーにトグルスイッチ＋絵文字（🌙 / ☀️）を設置。デフォルトはダークモード</li>
+          <li>背景に3層の放射グラデーション mesh を追加し、全体的な視覚演出を強化</li>
+          <li>ヒーロータイトルをグラデーションテキスト化（blue → indigo → violet）</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">コマンド一覧をカテゴリ別に分類</p>
+        <ul class="update-list">
+          <li>🛡 管理者限定 — /set-channel・/timeout・/kick・/ban・/role・/role-button・X系</li>
+          <li>🪙 コイン・カジノ — /balance・/profile・/top・/work・/steal・/bonus・各ゲーム</li>
+          <li>✦ その他 — /help・/rank・/leaderboard・/ping・@メンション</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">X 通知 — fxtwitter 対応</p>
+        <ul class="update-list">
+          <li>X 通知の URL 変換に <strong>fxtwitter</strong>（fixupx.com）を新たに追加</li>
+          <li>/set-xnotifytype で embed / link / fxtwitter の3種類から選択可能に</li>
+          <li>fxtwitter モードでは Discord 上でツイート内容がより正確にプレビュー表示される</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">カウント — メッセージ削除対応</p>
+        <ul class="update-list">
+          <li>カウントのメッセージも削除しても自動で削除を通知するように</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.5.3 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.5.3</span>
         <h3>チャンネル設定コマンドを /set-channel に統合</h3>
         <span class="chevron">▼</span>
       </div>
@@ -505,7 +543,7 @@
   </div>
 </section>
 
-<footer>© 2026 HGHome Official &nbsp;·&nbsp; v0.5.3</footer>
+<footer>© 2026 HGHome Official &nbsp;·&nbsp; v1.0.0</footer>
 
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
