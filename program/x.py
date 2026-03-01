@@ -133,7 +133,8 @@ class XNotifier(commands.Cog):
         is_reply = title.startswith("R to @")
         label    = "🔁" if is_rt else ("↩️" if is_reply else "🐦")
 
-        return f"{label} **@{username}** の新着ポスト\n{link}"
+        return f"{link}"
+        # {label} **@{username}** の新着ポスト\n
 
     # ── Embed ─────────────────────────────────────────────────────
 
