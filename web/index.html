@@ -561,7 +561,7 @@ footer {
 
 <section id="home">
   <div class="fade-in">
-    <div class="hero-badge">v0.5 リリース済み</div>
+    <div class="hero-badge">v0.5.1 リリース済み</div>
     <h1 class="hero-title">ちょっと多機能な<br><span class="accent">管理 & カジノ</span><br>Discord Bot</h1>
     <p class="hero-sub">深夜テンションで作った…<br>ProBotのXP有料化をきっかけにXP機能が追加されました。</p>
     <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
@@ -572,11 +572,38 @@ footer {
       <div class="section-label">// changelog</div>
       <h2>アップデート履歴</h2>
     </div>
-
-    <!-- v0.5 (NEW) -->
+    
+    <!-- v0.5.1 (LATEST) -->
     <div class="update-card latest open fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">    
+        <span class="version-tag new">v0.5.1</span>    
+        <h3>サーバー統計 強化・週間 / 月間レポート追加</h3>  
+        <span class="chevron">▼</span> 
+      </div>
+      <div class="update-body">
+   
+        <p class="update-img-label">サーバー統計アップデート</p>
+        <ul class="update-list">
+          <li>週間・月間サーバーレポートを自動送信</li> 
+          <li>今週 / 今月で一番使われた絵文字ランキングを追加</li>
+          <li>1日あたりの平均メッセージ数を算出・表示</li>
+          <li>今週・今月で最もアクティブだった日を表示</li> 
+          <li>リアクション統計を Top3 / Top5 形式で表示</li>
+          <li>既存のデイリーレポートとの互換性を維持</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">内部改善</p>
+        <ul class="update-list"> 
+          <li>日次データを基にした集計ロジックを共通化</li> 
+          <li>週間・月間処理を同一コードで管理</li>  
+          <li>FireBase 読み取り回数を最小化</li>
+        </ul>
+      </div>
+    </div>
+    
+    <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
-        <span class="version-tag new">v0.5</span>
+        <span class="version-tag">v0.5</span>
         <h3>カジノ大幅強化・Firebase最適化・/help刷新</h3>
         <span class="chevron">▼</span>
       </div>
