@@ -9,15 +9,16 @@
 
 <style>
 :root {
-  --bg:      #080a0f;
-  --surface: #0d1017;
-  --border:  #1c2333;
-  --border2: #263047;
+  --bg:      #060810;
+  --surface: #0b0f1a;
+  --border:  #1a2235;
+  --border2: #243050;
   --text:    #c9d1e0;
   --muted:   #5a6a85;
   --accent:  #3b82f6;
   --accent2: #60a5fa;
-  --glow:    rgba(59,130,246,0.18);
+  --glow:    rgba(59,130,246,0.22);
+  --glow2:   rgba(99,102,241,0.15);
 }
 
 *, *::before, *::after { margin:0; padding:0; box-sizing:border-box; }
@@ -31,14 +32,17 @@ body {
   overflow-x: hidden;
 }
 
+/* ── 背景グリッド + 放射グラデーション強化 ── */
 body::before {
   content: "";
   position: fixed;
   inset: 0;
   background-image:
-    linear-gradient(rgba(59,130,246,0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(59,130,246,0.03) 1px, transparent 1px);
-  background-size: 48px 48px;
+    radial-gradient(ellipse 80% 60% at 20% 10%, rgba(59,130,246,0.09) 0%, transparent 55%),
+    radial-gradient(ellipse 60% 50% at 80% 85%, rgba(99,102,241,0.07) 0%, transparent 50%),
+    linear-gradient(rgba(59,130,246,0.035) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(59,130,246,0.035) 1px, transparent 1px);
+  background-size: 100% 100%, 100% 100%, 48px 48px, 48px 48px;
   pointer-events: none;
   z-index: 0;
 }
@@ -51,8 +55,8 @@ nav {
   align-items: center;
   justify-content: space-between;
   padding: 0 5%;
-  background: rgba(8,10,15,0.85);
-  backdrop-filter: blur(12px);
+  background: rgba(6,8,16,0.88);
+  backdrop-filter: blur(14px);
   border-bottom: 1px solid var(--border);
   z-index: 1000;
 }
@@ -82,7 +86,7 @@ nav {
 .nav-links a:hover {
   color: var(--accent2);
   border-color: var(--border2);
-  background: rgba(59,130,246,0.06);
+  background: rgba(59,130,246,0.08);
 }
 
 .hamburger {
@@ -107,9 +111,9 @@ nav {
   display: none;
   position: fixed;
   top: 64px; left: 0; right: 0;
-  background: rgba(8,10,15,0.97);
+  background: rgba(6,8,16,0.97);
   border-bottom: 1px solid var(--border);
-  backdrop-filter: blur(12px);
+  backdrop-filter: blur(14px);
   z-index: 999;
   flex-direction: column;
   padding: 16px 5%;
@@ -171,13 +175,13 @@ h2 {
   content: "";
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, rgba(59,130,246,0.04), transparent 60%);
+  background: linear-gradient(135deg, rgba(59,130,246,0.06), transparent 60%);
   opacity: 0;
   transition: opacity 0.3s;
 }
 .card:hover {
   border-color: var(--border2);
-  box-shadow: 0 0 0 1px var(--border2), 0 8px 32px rgba(0,0,0,0.5);
+  box-shadow: 0 0 0 1px var(--border2), 0 8px 40px rgba(0,0,0,0.6);
   transform: translateY(-3px);
 }
 .card:hover::before { opacity: 1; }
@@ -198,7 +202,7 @@ h2 {
   padding: 10px 22px;
   border-radius: 8px;
   text-decoration: none;
-  background: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #6366f1);
   color: white;
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
@@ -206,12 +210,13 @@ h2 {
   letter-spacing: 0.03em;
   transition: all 0.25s;
   border: 1px solid transparent;
+  box-shadow: 0 4px 20px rgba(59,130,246,0.3);
 }
 .btn:hover {
   background: transparent;
   border-color: var(--accent);
   color: var(--accent2);
-  box-shadow: 0 0 20px var(--glow);
+  box-shadow: 0 0 28px var(--glow);
 }
 
 #home {
@@ -225,8 +230,8 @@ h2 {
   display: inline-flex;
   align-items: center;
   gap: 8px;
-  background: rgba(59,130,246,0.1);
-  border: 1px solid rgba(59,130,246,0.25);
+  background: rgba(59,130,246,0.12);
+  border: 1px solid rgba(59,130,246,0.3);
   border-radius: 100px;
   padding: 5px 14px;
   font-family: 'JetBrains Mono', monospace;
@@ -234,6 +239,7 @@ h2 {
   color: var(--accent2);
   margin-bottom: 24px;
   width: fit-content;
+  box-shadow: 0 0 20px rgba(59,130,246,0.1);
 }
 .hero-badge::before {
   content: "";
@@ -243,8 +249,8 @@ h2 {
   animation: pulse 2s infinite;
 }
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.3; }
+  0%, 100% { opacity: 1; box-shadow: 0 0 0 0 rgba(59,130,246,0.5); }
+  50% { opacity: 0.4; box-shadow: 0 0 0 5px rgba(59,130,246,0); }
 }
 
 .hero-title {
@@ -255,7 +261,12 @@ h2 {
   color: #fff;
   margin-bottom: 20px;
 }
-.hero-title .accent { color: var(--accent); }
+.hero-title .accent {
+  background: linear-gradient(135deg, var(--accent), #818cf8);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
 .hero-sub {
   color: var(--muted);
   font-size: clamp(14px, 2vw, 16px);
@@ -274,13 +285,12 @@ h2 {
 }
 .update-card:hover { border-color: var(--border2); transform: translateY(-2px); }
 
-/* v0.5 カードは強調スタイル */
 .update-card.latest {
-  border-color: rgba(59,130,246,0.35);
-  box-shadow: 0 0 0 1px rgba(59,130,246,0.12), 0 8px 32px rgba(0,0,0,0.4);
+  border-color: rgba(59,130,246,0.4);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.14), 0 8px 40px rgba(0,0,0,0.5);
 }
 .update-card.latest .update-header {
-  background: linear-gradient(135deg, rgba(59,130,246,0.08), transparent 70%);
+  background: linear-gradient(135deg, rgba(59,130,246,0.1), rgba(99,102,241,0.05) 50%, transparent 80%);
 }
 
 .update-header {
@@ -304,8 +314,9 @@ h2 {
 }
 .version-tag.new {
   color: #fff;
-  background: var(--accent);
-  border-color: var(--accent);
+  background: linear-gradient(135deg, var(--accent), #6366f1);
+  border-color: transparent;
+  box-shadow: 0 2px 12px rgba(59,130,246,0.4);
 }
 .update-header h3 {
   font-family: 'Syne', sans-serif;
@@ -409,9 +420,20 @@ h2 {
   display: flex;
   align-items: flex-start;
   gap: 14px;
-  transition: border-color 0.3s, transform 0.3s;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
 }
-.roadmap-item:hover { border-color: var(--border2); transform: translateY(-2px); }
+.roadmap-item::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59,130,246,0.05), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.roadmap-item:hover { border-color: var(--border2); transform: translateY(-2px); box-shadow: 0 8px 30px rgba(0,0,0,0.4); }
+.roadmap-item:hover::before { opacity: 1; }
 .roadmap-item.done { opacity: 0.45; border-style: dashed; }
 .roadmap-item.done .roadmap-icon::after { content: " ✓"; font-size: 14px; color: #57F287; }
 .roadmap-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
@@ -428,21 +450,33 @@ h2 {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 18px 20px;
-  transition: border-color 0.3s, transform 0.3s;
+  transition: border-color 0.3s, transform 0.3s, box-shadow 0.3s;
+  position: relative;
+  overflow: hidden;
+}
+.command-card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(59,130,246,0.07), transparent 60%);
+  opacity: 0;
+  transition: opacity 0.3s;
 }
 .command-card:hover {
   border-color: var(--accent);
   transform: translateY(-2px);
-  box-shadow: 0 0 20px var(--glow);
+  box-shadow: 0 0 0 1px rgba(59,130,246,0.2), 0 8px 30px rgba(59,130,246,0.12);
 }
+.command-card:hover::before { opacity: 1; }
 .command-name {
   font-family: 'JetBrains Mono', monospace;
   font-size: 13px;
   font-weight: 500;
   color: var(--accent2);
   margin-bottom: 6px;
+  position: relative;
 }
-.command-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+.command-desc { font-size: 13px; color: var(--muted); line-height: 1.5; position: relative; }
 
 .other-grid {
   display: grid;
@@ -511,6 +545,7 @@ footer {
   color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 12px;
+  background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.03));
 }
 
 .fade-in {
@@ -561,7 +596,7 @@ footer {
 
 <section id="home">
   <div class="fade-in">
-    <div class="hero-badge">v0.5.1 リリース済み</div>
+    <div class="hero-badge">v0.5.3 リリース済み</div>
     <h1 class="hero-title">ちょっと多機能な<br><span class="accent">管理 & カジノ</span><br>Discord Bot</h1>
     <p class="hero-sub">深夜テンションで作った…<br>ProBotのXP有料化をきっかけにXP機能が追加されました。</p>
     <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
@@ -572,35 +607,64 @@ footer {
       <div class="section-label">// changelog</div>
       <h2>アップデート履歴</h2>
     </div>
-    
-    <!-- v0.5.1 (LATEST) -->
+
+    <!-- v0.5.3 (LATEST) -->
     <div class="update-card latest open fade-in">
-      <div class="update-header" onclick="toggleUpdate(this)">    
-        <span class="version-tag new">v0.5.1</span>    
-        <h3>サーバー統計 強化・週間 / 月間レポート追加</h3>  
-        <span class="chevron">▼</span> 
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag new">v0.5.3</span>
+        <h3>チャンネル設定コマンドを /set-channel に統合</h3>
+        <span class="chevron">▼</span>
       </div>
       <div class="update-body">
-   
+        <p class="update-img-label">コマンド整理・統合</p>
+        <ul class="update-list">
+          <li>チャンネル設定系コマンドを <code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set-channel type:</code> に一本化</li>
+          <li><code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set_count</code>・<code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set_welcome</code>・<code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set-x</code>・<code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set-server</code>・<code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set_xp_channel</code>・<code style="color:var(--accent2);font-family:'JetBrains Mono',monospace;">/set-xpnews</code> を廃止</li>
+          <li>type は <strong>count / welcome / x / server / levelup / xpnews</strong> の 6 種類から選択</li>
+          <li>各 Cog（count・welcome・x_notifier・server・xp）から設定ロジックを分離・setchannel.py に集約</li>
+          <li>コマンド数を削減しつつ機能はそのまま維持</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">使い方</p>
+        <ul class="update-list">
+          <li>/set-channel type:count channel:#ch → カウントチャンネル設定 & カウントリセット</li>
+          <li>/set-channel type:welcome channel:#ch → 入退室通知チャンネル設定</li>
+          <li>/set-channel type:x channel:#ch → X 通知チャンネル設定</li>
+          <li>/set-channel type:server channel:#ch → 統計レポートチャンネル設定</li>
+          <li>/set-channel type:levelup channel:#ch → レベルアップ通知チャンネル設定</li>
+          <li>/set-channel type:xpnews channel:#ch → XP ニュースチャンネル設定</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.5.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.5.1</span>
+        <h3>サーバー統計 強化・週間 / 月間レポート追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
         <p class="update-img-label">サーバー統計アップデート</p>
         <ul class="update-list">
-          <li>週間・月間サーバーレポートを自動送信</li> 
+          <li>週間・月間サーバーレポートを自動送信</li>
           <li>今週 / 今月で一番使われた絵文字ランキングを追加</li>
           <li>1日あたりの平均メッセージ数を算出・表示</li>
-          <li>今週・今月で最もアクティブだった日を表示</li> 
+          <li>今週・今月で最もアクティブだった日を表示</li>
           <li>リアクション統計を Top3 / Top5 形式で表示</li>
           <li>既存のデイリーレポートとの互換性を維持</li>
         </ul>
         <div class="update-divider"></div>
         <p class="update-img-label">内部改善</p>
-        <ul class="update-list"> 
-          <li>日次データを基にした集計ロジックを共通化</li> 
-          <li>週間・月間処理を同一コードで管理</li>  
+        <ul class="update-list">
+          <li>日次データを基にした集計ロジックを共通化</li>
+          <li>週間・月間処理を同一コードで管理</li>
           <li>FireBase 読み取り回数を最小化</li>
         </ul>
       </div>
     </div>
-    
+
+    <!-- v0.5 -->
     <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v0.5</span>
@@ -662,12 +726,11 @@ footer {
           <li>各コマンドに簡易説明と使用例を追記</li>
           <li>v0.4〜v0.5 で追加・変更されたコマンドをすべて反映</li>
         </ul>
-        
+
         <p class="update-img-label">/ping追加</p>
         <ul class="update-list">
           <li>/ping 応答速度を調べます</li>
         </ul>
-
       </div>
     </div>
 
@@ -887,14 +950,14 @@ footer {
     <div class="command-card fade-in"><div class="command-name">/ban</div><div class="command-desc">ユーザーをBAN</div></div>
     <div class="command-card fade-in"><div class="command-name">/role type:</div><div class="command-desc">ロールの付与・削除（give / remove）</div></div>
     <div class="command-card fade-in"><div class="command-name">/role-button</div><div class="command-desc">ロール付与ボタン付きメッセージを投稿</div></div>
-    <div class="command-card fade-in"><div class="command-name">/set-server</div><div class="command-desc">サーバー統計レポートの送信先を設定</div></div>
-    <div class="command-card fade-in"><div class="command-name">/set-x</div><div class="command-desc">X通知チャンネルと通知形式を設定</div></div>
+    <div class="command-card fade-in"><div class="command-name">/set-channel type: <span style="color:var(--accent);font-size:11px;">NEW</span></div><div class="command-desc">各種チャンネルを一括設定（count / welcome / x / server / levelup / xpnews）</div></div>
     <div class="command-card fade-in"><div class="command-name">/set-xaccount</div><div class="command-desc">監視するXアカウントを追加・削除</div></div>
+    <div class="command-card fade-in"><div class="command-name">/set-xnotifytype</div><div class="command-desc">X通知の表示タイプを変更（embed / link）</div></div>
     <div class="command-card fade-in"><div class="command-name">/x-list</div><div class="command-desc">監視中のXアカウント一覧を表示</div></div>
     <div class="command-card fade-in"><div class="command-name">@HGHomeBot+</div><div class="command-desc">AIに質問</div></div>
     <div class="command-card fade-in"><div class="command-name">/work</div><div class="command-desc">働いてコイン獲得</div></div>
     <div class="command-card fade-in"><div class="command-name">/steal</div><div class="command-desc">他ユーザーから盗む</div></div>
-    <div class="command-card fade-in"><div class="command-name">/balance</div><div class="command-desc">所持コイン残高を確認 <span style="color:var(--accent);font-size:11px;">NEW</span></div></div>
+    <div class="command-card fade-in"><div class="command-name">/balance</div><div class="command-desc">所持コイン残高を確認</div></div>
     <div class="command-card fade-in"><div class="command-name">/profile</div><div class="command-desc">プロフィール・所持コイン確認</div></div>
     <div class="command-card fade-in"><div class="command-name">/top</div><div class="command-desc">資産ランキング</div></div>
     <div class="command-card fade-in"><div class="command-name">/rank</div><div class="command-desc">レベル表示</div></div>
@@ -903,7 +966,7 @@ footer {
     <div class="command-card fade-in"><div class="command-name">/cointoss</div><div class="command-desc">コイントスで勝負</div></div>
     <div class="command-card fade-in"><div class="command-name">/slot</div><div class="command-desc">スロットで遊ぶ</div></div>
     <div class="command-card fade-in"><div class="command-name">/dice</div><div class="command-desc">数字を予想して賭ける</div></div>
-    <div class="command-card fade-in"><div class="command-name">/blackjack</div><div class="command-desc">ブラックジャック <span style="color:var(--accent);font-size:11px;">NEW</span></div></div>
+    <div class="command-card fade-in"><div class="command-name">/blackjack</div><div class="command-desc">ブラックジャック</div></div>
   </div>
 </section>
 
