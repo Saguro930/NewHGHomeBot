@@ -1,0 +1,577 @@
+<!DOCTYPE html>
+<html lang="ja" data-theme="dark">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>HGHomeBot+</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+</head>
+
+<body>
+
+<div class="bg-mesh"></div>
+
+<!-- ── Navigation ── -->
+<nav>
+  <a href="#home" class="nav-logo">HGHome<span class="accent-text">Bot+</span></a>
+  <div class="nav-right">
+    <div class="nav-links">
+      <a href="#home">ホーム</a>
+      <a href="#roadmap">ロードマップ</a>
+      <a href="#commands">コマンド</a>
+      <a href="#other">その他</a>
+    </div>
+    <button class="theme-toggle" id="themeToggle" aria-label="テーマ切り替え"></button>
+    <span class="theme-icon" id="themeIcon">🌙</span>
+    <div class="hamburger" id="hamburger">
+      <span></span><span></span><span></span>
+    </div>
+  </div>
+</nav>
+
+<div class="mobile-menu" id="mobileMenu">
+  <a href="#home"     onclick="closeMobile()">ホーム</a>
+  <a href="#roadmap"  onclick="closeMobile()">ロードマップ</a>
+  <a href="#commands" onclick="closeMobile()">コマンド</a>
+  <a href="#other"    onclick="closeMobile()">その他</a>
+</div>
+
+<!-- ═══════ HOME ═══════ -->
+<section id="home">
+  <div class="fade-in">
+    <div class="hero-badge">
+      <span class="hero-badge-dot"></span>
+      v0.5.3 リリース済み
+    </div>
+    <h1 class="hero-title">
+      ちょっと多機能な<br>
+      <span class="grad">管理 &amp; カジノ</span><br>
+      Discord Bot
+    </h1>
+    <p class="hero-sub">
+      深夜テンションで作った…<br>
+      ProBotのXP有料化をきっかけにXP機能が追加されました。
+    </p>
+    <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
+  </div>
+
+  <!-- Changelog -->
+  <div style="margin-top:72px;">
+    <div class="section-header fade-in">
+      <div class="section-label">// changelog</div>
+      <h2>アップデート履歴</h2>
+    </div>
+
+    <!-- v0.5.3 LATEST -->
+    <div class="update-card latest open fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag new">v0.5.3</span>
+        <h3>チャンネル設定コマンドを /set-channel に統合</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">コマンド整理・統合</p>
+        <ul class="update-list">
+          <li>チャンネル設定系コマンドを <code>/set-channel type:</code> に一本化</li>
+          <li><code>/set_count</code>・<code>/set_welcome</code>・<code>/set-x</code>・<code>/set-server</code>・<code>/set_xp_channel</code>・<code>/set-xpnews</code> を廃止</li>
+          <li>type は <strong>count / welcome / x / server / levelup / xpnews</strong> の 6 種類から選択</li>
+          <li>各 Cog（count・welcome・x_notifier・server・xp）から設定ロジックを分離・setchannel.py に集約</li>
+          <li>コマンド数を削減しつつ機能はそのまま維持</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">使い方</p>
+        <ul class="update-list">
+          <li>/set-channel type:count   channel:#ch → カウントチャンネル設定 &amp; カウントリセット</li>
+          <li>/set-channel type:welcome channel:#ch → 入退室通知チャンネル設定</li>
+          <li>/set-channel type:x       channel:#ch → X 通知チャンネル設定</li>
+          <li>/set-channel type:server  channel:#ch → 統計レポートチャンネル設定</li>
+          <li>/set-channel type:levelup channel:#ch → レベルアップ通知チャンネル設定</li>
+          <li>/set-channel type:xpnews  channel:#ch → XP ニュースチャンネル設定</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.5.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.5.1</span>
+        <h3>サーバー統計 強化・週間 / 月間レポート追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">サーバー統計アップデート</p>
+        <ul class="update-list">
+          <li>週間・月間サーバーレポートを自動送信</li>
+          <li>今週 / 今月で一番使われた絵文字ランキングを追加</li>
+          <li>1日あたりの平均メッセージ数を算出・表示</li>
+          <li>今週・今月で最もアクティブだった日を表示</li>
+          <li>リアクション統計を Top3 / Top5 形式で表示</li>
+          <li>既存のデイリーレポートとの互換性を維持</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">内部改善</p>
+        <ul class="update-list">
+          <li>日次データを基にした集計ロジックを共通化</li>
+          <li>週間・月間処理を同一コードで管理</li>
+          <li>Firebase 読み取り回数を最小化</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.5 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.5</span>
+        <h3>カジノ大幅強化・Firebase最適化・/help刷新</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">カジノ コマンドデザイン リニューアル</p>
+        <div class="update-images update-images--compare" style="margin-bottom:16px;">
+          <div class="compare-wrap">
+            <span class="compare-label">Before</span>
+            <img src="image/casino-old.jpeg" alt="旧カジノデザイン" onclick="openLightbox(this.src)">
+          </div>
+          <div class="compare-wrap">
+            <span class="compare-label">After</span>
+            <img src="image/casino-new.jpeg" alt="新カジノデザイン" onclick="openLightbox(this.src)">
+          </div>
+        </div>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>全カジノコマンドの出力を discord.Embed に刷新</li>
+          <li>勝利・敗北・引き分けで色が変化（緑 / 赤 / グレー）</li>
+          <li>/balance コマンドを新たに追加（アバター付き残高表示）</li>
+          <li>ダイスの出目表示を絵文字（⚀〜⚅）に変更</li>
+          <li>最大ベット額（10,000,000コイン）の上限を設定</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">ブラックジャック 追加</p>
+        <div class="update-images update-images--single" style="margin-bottom:16px;">
+          <img src="image/blackjack.jpeg" alt="ブラックジャック" onclick="openLightbox(this.src)">
+        </div>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/blackjack コマンドを新規追加</li>
+          <li>Hit / Stand / Double の3択ボタン操作</li>
+          <li>ナチュラルブラックジャックは1.5倍払い（ベット×2.5）</li>
+          <li>ディーラーは17以上になるまで自動ドロー</li>
+          <li>引き分け時はベット返却、60秒無操作でボタン自動無効化</li>
+          <li>他ユーザーによるボタン操作を弾く処理を実装</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">Firebase 無料枠 対策</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>Firestore Transaction に移行し競合状態を解消</li>
+          <li>asyncio.to_thread でラップし非同期処理を正規化</li>
+          <li>不要な二重アクセスを削減、読み取り数を最小化</li>
+          <li>カジノコマンドのコイン操作を共通ヘルパーに集約</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">/help コマンド 刷新 / /ping 追加</p>
+        <ul class="update-list">
+          <li>カテゴリ別（管理 / カジノ / レベル / X通知 / その他）に整理</li>
+          <li>各コマンドに簡易説明と使用例を追記</li>
+          <li>/ping で応答速度を確認可能に</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.4.2 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4.2</span>
+        <h3>ロールコマンド刷新・remove追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <ul class="update-list">
+          <li>/giverole を /role type: に統合・刷新</li>
+          <li>type は give（付与）/ remove（削除）から選択</li>
+          <li>ロールの付与・削除をひとつのコマンドで管理できるように</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.4.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4.1</span>
+        <h3>X（Twitter）通知機能追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <ul class="update-list">
+          <li>Nitter RSS を利用した新着ポスト通知を実装（APIキー不要）</li>
+          <li>/set-xaccount username: で監視アカウントを追加・削除（トグル式）</li>
+          <li>/x-list で監視中アカウントと設定を一覧表示</li>
+          <li>5分ごとに自動チェック、複数インスタンスへのフォールバック対応</li>
+          <li>RT・リプライ・新規ポストを色分けで識別（embed モード）</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.4 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.4</span>
+        <h3>管理強化・ロールボタン・サーバー統計</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">管理コマンド</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/kick・/ban を追加。理由・削除日数の任意指定に対応</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">ロール付与ボタン</p>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>/role-button でボタン付きメッセージを投稿（トグル式・永続化対応）</li>
+        </ul>
+        <div class="update-divider"></div>
+        <p class="update-img-label">サーバー統計 / ボーナス統合</p>
+        <ul class="update-list">
+          <li>毎日 JST 0時に前日の統計を自動送信</li>
+          <li>/daily・/weekly・/monthly を /bonus type: に統合</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.3.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.3.1</span>
+        <h3>カウント制限・/top リニューアル</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <p class="update-img-label">カウント連続投稿制限</p>
+        <div class="update-images update-images--single">
+          <img src="image/count.jpeg" alt="カウント制限" onclick="openLightbox(this.src)">
+        </div>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>4回連続で投稿するとカウントが1にリセット</li>
+        </ul>
+        <p class="update-img-label">/top コマンド リニューアル</p>
+        <div class="update-images update-images--compare">
+          <div class="compare-wrap">
+            <span class="compare-label">Before</span>
+            <img src="image/top-old.jpeg" alt="旧 /top" onclick="openLightbox(this.src)">
+          </div>
+          <div class="compare-wrap">
+            <span class="compare-label">After</span>
+            <img src="image/top-new.jpeg" alt="新 /top" onclick="openLightbox(this.src)">
+          </div>
+        </div>
+        <ul class="update-list" style="margin-bottom:20px;">
+          <li>◀ ▶ ボタンでランキング種別を切り替え可能に</li>
+          <li>逆所持金ランキング（ワースト）を追加</li>
+          <li>20秒無操作でボタンが自動無効化</li>
+        </ul>
+        <p class="update-img-label">コイン関連</p>
+        <ul class="update-list">
+          <li>/steal の罰金を「盗む予定だった金額の1/10」に変更</li>
+          <li>/profile で借金時に赤表示・警告を追加</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.3 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.3</span>
+        <h3>ようこそ・カウント機能追加</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <ul class="update-list">
+          <li>ようこそ・さようならメッセージを追加</li>
+          <li>カウント機能の追加</li>
+          <li>銀行コマンドに all オプションを追加・手数料を削除</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.2 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.2</span>
+        <h3>XP・カジノ機能実装</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <ul class="update-list">
+          <li>XPレベリング機能を実装</li>
+          <li>コイン・カジノ機能を追加</li>
+          <li>Monthly ボーナスを追加</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- v0.1 -->
+    <div class="update-card fade-in">
+      <div class="update-header" onclick="toggleUpdate(this)">
+        <span class="version-tag">v0.1</span>
+        <h3>初期リリース</h3>
+        <span class="chevron">▼</span>
+      </div>
+      <div class="update-body">
+        <ul class="update-list">
+          <li>Youtube 検索機能</li>
+          <li>ロール付与・タイムアウト</li>
+          <li>チケット・ヘルプ機能</li>
+        </ul>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════ ROADMAP ═══════ -->
+<section id="roadmap">
+  <div class="section-header fade-in">
+    <div class="section-label">// roadmap</div>
+    <h2>開発予定</h2>
+    <p class="section-desc">今後追加・改善予定の機能</p>
+  </div>
+  <div class="roadmap-grid">
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの継続率表示</p></div>
+    <div class="roadmap-item done fade-in"><span class="roadmap-icon">🔨</span><p>キック・バン機能の実装</p></div>
+    <div class="roadmap-item done fade-in"><span class="roadmap-icon">🃏</span><p>ブラックジャック実装</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">🌏</span><p>グロチャ機能の実装</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">📊</span><p>Webダッシュボード実装</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">👤</span><p>安価機能追加</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">✨</span><p>UI / UX 改善</p></div>
+    <div class="roadmap-item fade-in"><span class="roadmap-icon">▶️</span><p>Youtube 検索復活</p></div>
+  </div>
+</section>
+
+<!-- ═══════ COMMANDS ═══════ -->
+<section id="commands">
+  <div class="section-header fade-in">
+    <div class="section-label">// commands</div>
+    <h2>コマンド一覧</h2>
+    <p class="section-desc">カテゴリ別に整理されたコマンド</p>
+  </div>
+
+  <div class="command-categories">
+
+    <!-- 管理者限定 -->
+    <div class="fade-in">
+      <div class="cmd-category-label admin">🛡 管理者限定</div>
+      <div class="command-grid">
+        <div class="command-card admin">
+          <div class="command-name">/set-channel type:<span class="tag-new">NEW</span></div>
+          <div class="command-desc">各種チャンネルを一括設定（count / welcome / x / server / levelup / xpnews）</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/set-xaccount</div>
+          <div class="command-desc">監視する X アカウントを追加・削除</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/set-xnotifytype</div>
+          <div class="command-desc">X 通知の表示タイプを変更（embed / link）</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/x-list</div>
+          <div class="command-desc">監視中の X アカウント一覧を表示</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/timeout</div>
+          <div class="command-desc">ユーザーをタイムアウト</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/kick</div>
+          <div class="command-desc">ユーザーをキック（理由の任意指定可）</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/ban</div>
+          <div class="command-desc">ユーザーをBAN（削除日数の指定可）</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/role type:</div>
+          <div class="command-desc">ロールの付与・削除（give / remove）</div>
+        </div>
+        <div class="command-card admin">
+          <div class="command-name">/role-button</div>
+          <div class="command-desc">ロール付与ボタン付きメッセージを投稿</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- コイン -->
+    <div class="fade-in">
+      <div class="cmd-category-label coin">🪙 コイン・カジノ</div>
+      <div class="command-grid">
+        <div class="command-card coin">
+          <div class="command-name">/balance</div>
+          <div class="command-desc">所持コイン残高をアバター付きで確認</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/profile</div>
+          <div class="command-desc">プロフィール・所持コイン確認</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/top</div>
+          <div class="command-desc">資産ランキング（◀ ▶ で種別切り替え）</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/work</div>
+          <div class="command-desc">働いてコインを獲得</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/steal</div>
+          <div class="command-desc">他ユーザーから盗む（失敗時は罰金）</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/bonus type:</div>
+          <div class="command-desc">daily / weekly / monthly ボーナスを受け取る</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/cointoss</div>
+          <div class="command-desc">コイントスで勝負</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/slot</div>
+          <div class="command-desc">スロットで遊ぶ</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/dice</div>
+          <div class="command-desc">数字を予想して賭ける</div>
+        </div>
+        <div class="command-card coin">
+          <div class="command-name">/blackjack</div>
+          <div class="command-desc">ブラックジャック（Hit / Stand / Double）</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- その他 -->
+    <div class="fade-in">
+      <div class="cmd-category-label other">✦ その他</div>
+      <div class="command-grid">
+        <div class="command-card other">
+          <div class="command-name">/help</div>
+          <div class="command-desc">ヘルプを表示（カテゴリ別）</div>
+        </div>
+        <div class="command-card other">
+          <div class="command-name">/rank</div>
+          <div class="command-desc">自分または指定ユーザーのレベルを表示</div>
+        </div>
+        <div class="command-card other">
+          <div class="command-name">/leaderboard</div>
+          <div class="command-desc">XPランキング Top10 を表示</div>
+        </div>
+        <div class="command-card other">
+          <div class="command-name">/ping</div>
+          <div class="command-desc">Bot の応答速度を確認</div>
+        </div>
+        <div class="command-card other">
+          <div class="command-name">@HGHomeBot+</div>
+          <div class="command-desc">AI にメンションして質問</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</section>
+
+<!-- ═══════ OTHER ═══════ -->
+<section id="other">
+  <div class="section-header fade-in">
+    <div class="section-label">// other</div>
+    <h2>その他</h2>
+    <p class="section-desc">連絡先・外部リンク</p>
+  </div>
+
+  <div class="discord-wrap fade-in">
+    <iframe
+      src="https://discord.com/widget?id=1434416718897479720&theme=dark"
+      width="100%" height="400"
+      allowtransparency="true" frameborder="0"
+      sandbox="allow-popups allow-popups-to-escape-sandbox allow-same-origin allow-scripts">
+    </iframe>
+  </div>
+
+  <div class="other-grid">
+    <div class="other-card fade-in">
+      <div class="card-title">👤 製作者</div>
+      <p class="card-desc">Sou930（Discord DM）</p>
+    </div>
+    <a href="https://github.com/Sou930/HGHomeBot-Plus/" target="_blank" rel="noopener" class="other-card fade-in">
+      <div class="card-title">🐙 GitHub</div>
+      <p class="card-desc">HGHomeBot-Plus リポジトリ</p>
+    </a>
+  </div>
+</section>
+
+<footer>© 2026 HGHome Official &nbsp;·&nbsp; v0.5.3</footer>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox" onclick="closeLightbox()">
+  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <img id="lightboxImg" src="" alt="">
+</div>
+
+<script>
+/* ── Theme ── */
+const html      = document.documentElement;
+const toggle    = document.getElementById('themeToggle');
+const icon      = document.getElementById('themeIcon');
+
+function applyTheme(theme) {
+  html.setAttribute('data-theme', theme);
+  icon.textContent = theme === 'dark' ? '🌙' : '☀️';
+  localStorage.setItem('theme', theme);
+}
+
+const saved = localStorage.getItem('theme') || 'dark';
+applyTheme(saved);
+
+toggle.addEventListener('click', () => {
+  applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+icon.addEventListener('click', () => {
+  applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
+});
+
+/* ── Hamburger ── */
+const hamburger  = document.getElementById('hamburger');
+const mobileMenu = document.getElementById('mobileMenu');
+
+hamburger.addEventListener('click', () => {
+  hamburger.classList.toggle('open');
+  mobileMenu.classList.toggle('open');
+});
+function closeMobile() {
+  hamburger.classList.remove('open');
+  mobileMenu.classList.remove('open');
+}
+
+/* ── Accordion ── */
+function toggleUpdate(header) {
+  header.closest('.update-card').classList.toggle('open');
+}
+
+/* ── Lightbox ── */
+function openLightbox(src) {
+  document.getElementById('lightboxImg').src = src;
+  document.getElementById('lightbox').classList.add('active');
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('active');
+}
+
+/* ── Scroll fade ── */
+const observer = new IntersectionObserver((entries) => {
+  entries.forEach((e, i) => {
+    if (e.isIntersecting) {
+      setTimeout(() => e.target.classList.add('visible'), i * 55);
+    }
+  });
+}, { threshold: 0.08 });
+document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
+</script>
+
+</body>
+</html>
