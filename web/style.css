@@ -809,14 +809,32 @@ footer {
   position: relative;
   z-index: 1;
   text-align: center;
-  padding: 32px 20px;
+  padding: 40px 20px 32px;
   border-top: 1px solid var(--border);
+  background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.025));
+  transition: border-color var(--transition);
+}
+
+.footer-counter {
+  margin-bottom: 16px;
+}
+
+.counter-img {
+  height: 36px;
+  image-rendering: pixelated;
+  border-radius: 6px;
+  opacity: 0.85;
+  transition: opacity 0.25s;
+  vertical-align: middle;
+}
+.counter-img:hover { opacity: 1; }
+
+.footer-copy {
   color: var(--muted);
   font-family: 'JetBrains Mono', monospace;
   font-size: 11px;
   letter-spacing: 0.06em;
-  background: linear-gradient(to bottom, transparent, rgba(59,130,246,0.025));
-  transition: border-color var(--transition);
+  transition: color var(--transition);
 }
 
 /* ── Fade-in ─────────────────────────────── */
