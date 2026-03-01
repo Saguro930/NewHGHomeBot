@@ -40,7 +40,7 @@ async def setup(bot, db):
     from program.coin.steal import Steal
     from program.coin.top import Top
     from program.profile import Profile
-    from program.xp import XP
+    from program.server.xp import XP
     from program.count import Count
     from program.welcome import Welcome
     from program.server.server import Server
