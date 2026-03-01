@@ -11,7 +11,16 @@
 
 <body>
 
-<div class="bg-mesh"></div>
+<div class="bg-mesh">
+  <div class="bg-static"></div>
+  <div class="bg-orbs">
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+    <div class="orb orb-3"></div>
+    <div class="orb orb-4"></div>
+    <div class="orb orb-5"></div>
+  </div>
+</div>
 
 <!-- ── Navigation ── -->
 <nav>
@@ -23,8 +32,10 @@
       <a href="#commands">コマンド</a>
       <a href="#other">その他</a>
     </div>
-    <button class="theme-toggle" id="themeToggle" aria-label="テーマ切り替え"></button>
-    <span class="theme-icon" id="themeIcon">🌙</span>
+    <button class="theme-btn" id="themeBtn" aria-label="テーマ切り替え">
+      <span class="theme-icon" id="themeIcon">🌙</span>
+      <span class="theme-label" id="themeLabel">Dark</span>
+    </button>
     <div class="hamburger" id="hamburger">
       <span></span><span></span><span></span>
     </div>
@@ -75,8 +86,10 @@
         <p class="update-img-label">サイト全面リニューアル</p>
         <ul class="update-list">
           <li>サイトを全面リニューアル。HTML / CSS を完全分離（index.html + style.css）</li>
-          <li>ダークモード / ホワイトモード切り替え機能を追加。</li>
+          <li>ダークモード / ホワイトモード切り替え機能を追加。設定はブラウザに保存（localStorage）</li>
           <li>ナビバーにトグルスイッチ＋絵文字（🌙 / ☀️）を設置。デフォルトはダークモード</li>
+          <li>背景に3層の放射グラデーション mesh を追加し、全体的な視覚演出を強化</li>
+          <li>ヒーロータイトルをグラデーションテキスト化（blue → indigo → violet）</li>
         </ul>
         <div class="update-divider"></div>
         <p class="update-img-label">コマンド一覧をカテゴリ別に分類</p>
@@ -95,7 +108,9 @@
         <div class="update-divider"></div>
         <p class="update-img-label">カウント — メッセージ削除対応</p>
         <ul class="update-list">
-          <li>カウントのメッセージに対応</li>
+          <li>カウントチャンネルで不正なメッセージ（数字・式以外）を自動削除するように</li>
+          <li>間違ったカウントのメッセージも削除してチャンネルをクリーンに保つ</li>
+          <li>連続投稿制限（5回）によるリセット時も該当メッセージを削除</li>
         </ul>
       </div>
     </div>
@@ -559,26 +574,34 @@
 </div>
 
 <script>
-/* ── Theme ── */
+/* ── Theme cycle: dark → light → glass → dark ── */
 const html      = document.documentElement;
-const toggle    = document.getElementById('themeToggle');
-const icon      = document.getElementById('themeIcon');
+const themeBtn  = document.getElementById('themeBtn');
+const themeIcon = document.getElementById('themeIcon');
+const themeLbl  = document.getElementById('themeLabel');
 
-function applyTheme(theme) {
-  html.setAttribute('data-theme', theme);
-  icon.textContent = theme === 'dark' ? '🌙' : '☀️';
-  localStorage.setItem('theme', theme);
+const THEMES = [
+  { key: 'dark',  icon: '🌙', label: 'Dark'  },
+  { key: 'light', icon: '☀️', label: 'Light' },
+  { key: 'glass', icon: '🫧', label: 'Glass' },
+];
+
+function applyTheme(key) {
+  html.setAttribute('data-theme', key);
+  const t = THEMES.find(x => x.key === key) || THEMES[0];
+  themeIcon.textContent = t.icon;
+  themeLbl.textContent  = t.label;
+  localStorage.setItem('theme', key);
 }
 
-const saved = localStorage.getItem('theme') || 'dark';
-applyTheme(saved);
+function cycleTheme() {
+  const cur = html.getAttribute('data-theme') || 'dark';
+  const idx = THEMES.findIndex(x => x.key === cur);
+  applyTheme(THEMES[(idx + 1) % THEMES.length].key);
+}
 
-toggle.addEventListener('click', () => {
-  applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-});
-icon.addEventListener('click', () => {
-  applyTheme(html.getAttribute('data-theme') === 'dark' ? 'light' : 'dark');
-});
+applyTheme(localStorage.getItem('theme') || 'dark');
+themeBtn.addEventListener('click', cycleTheme);
 
 /* ── Hamburger ── */
 const hamburger  = document.getElementById('hamburger');
