@@ -266,35 +266,6 @@ class XP(commands.Cog):
         embed.description = "\n".join(entries) if entries else "まだデータがありません。"
         await interaction.followup.send(embed=embed)
 
-    # ── /set_xp_channel コマンド（管理者用）──────────────
-    @app_commands.command(name="set_xp_channel", description="【管理者】レベルアップ通知を送るチャンネルを設定する")
-    @app_commands.describe(channel="通知先のチャンネル")
-    @app_commands.default_permissions(administrator=True)
-    async def set_xp_channel(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        self.get_guild_ref(interaction.guild.id).set(
-            {"level_up_channel": str(channel.id)},
-            merge=True
-        )
-        await interaction.response.send_message(
-            f"✅ レベルアップ通知チャンネルを {channel.mention} に設定しました。",
-            ephemeral=True
-        )
-
-    # ── /set-xpnews コマンド（管理者用）──────────────────
-    @app_commands.command(name="set-xpnews", description="【管理者】毎日0時のXPニュースを送るチャンネルを設定する")
-    @app_commands.describe(channel="XPニュースを送るチャンネル")
-    @app_commands.default_permissions(administrator=True)
-    async def set_xpnews(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        self.get_guild_ref(interaction.guild.id).set(
-            {"xpnews_channel": str(channel.id)},
-            merge=True
-        )
-        await interaction.response.send_message(
-            f"✅ XPニュースチャンネルを {channel.mention} に設定しました。\n"
-            f"📰 毎日0時にTop3を発表します。",
-            ephemeral=True
-        )
-
     # ── ランク順位取得（ヘルパー）────────────────────────
     async def get_rank_position(self, guild_id: int, total_xp: int) -> int:
         docs = (
