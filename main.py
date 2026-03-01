@@ -41,7 +41,7 @@ async def setup(bot, db):
     from program.coin.top import Top
     from program.profile import Profile
     from program.server.xp import XP
-    from program.count import Count
+    from program.game.count import Count
     from program.welcome import Welcome
     from program.server.server import Server
     from program.x import XNotifier
