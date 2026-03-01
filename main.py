@@ -46,6 +46,7 @@ async def setup(bot, db):
     from program.server.server import Server
     from program.x import XNotifier
     from program.ping import Ping
+    from program.setchannel import SetChannel
     
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -66,6 +67,7 @@ async def setup(bot, db):
     await bot.add_cog(Server(bot,db))
     await bot.add_cog(XNotifier(bot, db))
     await bot.add_cog(Ping(bot))
+    await bot.add_cog(SetChannel(bot, db))
 
 async def run_bot():
     await setup(bot, db)
