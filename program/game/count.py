@@ -58,7 +58,6 @@ class Count(commands.Cog):
         if message.channel.id != count_channel:
             return
 
-        # 数字 or 式以外は無視
         content = message.content.replace(" ", "")
         if not re.fullmatch(r"[0-9+\-*/%]+", content):
             return
@@ -70,13 +69,13 @@ class Count(commands.Cog):
         author_id = message.author.id
 
         # -----------------------------
-        # 連続投稿チェック（4回連続でリセット）
+        # 連続投稿チェック
         # -----------------------------
-        # 直近4件が全て同じユーザーなら弾く
         if len(recent_authors) >= 4 and all(uid == author_id for uid in recent_authors[-4:]):
             doc_ref.update({
                 "count": 1,
-                "recent_authors": []
+                "recent_authors": [],
+                "last_correct_message_id": None
             })
             await message.add_reaction("🚫")
             await message.channel.send(
@@ -89,23 +88,54 @@ class Count(commands.Cog):
         # 正誤判定
         # -----------------------------
         if value == current_count:
-            # 直近4件だけ保持してFirestoreに保存
             new_history = (recent_authors + [author_id])[-4:]
             doc_ref.update({
                 "count": current_count + 1,
-                "recent_authors": new_history
+                "recent_authors": new_history,
+                "last_correct_message_id": message.id
             })
             await message.add_reaction("✅")
         else:
             doc_ref.update({
                 "count": 1,
-                "recent_authors": []   # ミス時も履歴リセット
+                "recent_authors": [],
+                "last_correct_message_id": None
             })
             await message.add_reaction("❌")
             await message.channel.send(
                 f"❌ 間違いです！\n"
                 f"正解は **{current_count}** です。\n"
                 f"🔁 **1 からやり直しになりました You are 戦犯！**"
+            )
+
+    # -----------------------------
+    # メッセージ削除監視
+    # -----------------------------
+    @commands.Cog.listener()
+    async def on_message_delete(self, message: discord.Message):
+        if not message.guild:
+            return
+
+        guild_id = str(message.guild.id)
+        doc_ref = self.db.collection("guilds").document(guild_id)
+        doc = doc_ref.get()
+        if not doc.exists:
+            return
+
+        data = doc.to_dict()
+        count_channel = data.get("count_channel")
+        last_id = data.get("last_correct_message_id")
+        current_count = data.get("count", 1)
+
+        if message.channel.id != count_channel:
+            return
+
+        # 最新の正解メッセージが消された場合
+        if last_id and message.id == last_id:
+            channel = message.channel
+            await channel.send(
+                f"🗑️ 最新の数字が削除されたので再送します\n"
+                f"➡️ **次は `{current_count}` です**"
             )
 
 
