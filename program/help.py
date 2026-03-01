@@ -32,6 +32,9 @@ PAGES = [
             ("/top",            "資産ランキングを表示"),
             ("/bonus type:",    "daily / weekly / monthly ボーナスを受け取る"),
             ("/bank type:",     "銀行にコインを預ける•引き出す"),
+            ("/blackjack",      "ブラックジャックを遊びます"),
+            ("/cointoss",       "コイントスをします"),
+            ("/slot",           "スロットで遊びます"),
         ]
     },
     {
@@ -40,6 +43,7 @@ PAGES = [
         "fields": [
             ("/rank [user:]",  "自分または指定ユーザーのXPランクを確認"),
             ("/leaderboard",   "サーバーのXPランキングを表示"),
+            ("/ping",          "Botの応答速度を調べます"),
             ("@HGHomeBot+",    "AIに質問する"),
         ]
     },
