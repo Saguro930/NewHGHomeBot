@@ -303,16 +303,6 @@ class Server(commands.Cog):
 
             await channel.send(embed=embed)
 
-    # ─── コマンド ─────────────────────────────
-
-    @app_commands.command(name="set-server", description="統計レポート送信チャンネルを設定")
-    @app_commands.checks.has_permissions(administrator=True)
-    async def set_server(self, interaction: discord.Interaction, channel: discord.TextChannel):
-        self.get_channel_ref(interaction.guild.id).set(
-            {"server_channel": channel.id}, merge=True
-        )
-        await interaction.response.send_message("✅ 設定しました", ephemeral=True)
-
 
 async def setup(bot, db):
     await bot.add_cog(Server(bot, db))
