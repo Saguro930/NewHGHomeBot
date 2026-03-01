@@ -37,25 +37,6 @@ class Count(commands.Cog):
         self.db = db
 
     # -----------------------------
-    # /set_count（管理者のみ）
-    # -----------------------------
-    @commands.hybrid_command(name="set_count")
-    @commands.has_permissions(administrator=True)
-    async def set_count(self, ctx: commands.Context):
-        guild_id = str(ctx.guild.id)
-        channel_id = ctx.channel.id
-        doc_ref = self.db.collection("guilds").document(guild_id)
-        doc_ref.set({
-            "count_channel": channel_id,
-            "count": 1,
-            "recent_authors": []   # 履歴もリセット
-        }, merge=True)
-        await ctx.reply(
-            f"✅ カウントチャンネルを {ctx.channel.mention} に設定しますた\n"
-            f"🔢 カウントは **1** からスタートです！"
-        )
-
-    # -----------------------------
     # メッセージ監視
     # -----------------------------
     @commands.Cog.listener()
