@@ -134,7 +134,6 @@ class XNotifier(commands.Cog):
         label    = "🔁" if is_rt else ("↩️" if is_reply else "🐦")
 
         return f"{link}"
-        # {label} **@{username}** の新着ポスト\n
 
     # ── Embed ─────────────────────────────────────────────────────
 
@@ -182,31 +181,24 @@ class XNotifier(commands.Cog):
 
         return embed
 
-    # ── /set-x ───────────────────────────────────────────────────
+    # ── /set-xnotifytype ─────────────────────────────────────────
+    # 通知タイプのみ変更（チャンネル設定は /set-channel type:x で行う）
 
-    @app_commands.command(name="set-x", description="X の通知チャンネルと通知タイプを設定します")
-    @app_commands.describe(
-        channel="通知を送るチャンネル",
-        type="embed：内容も表示 / link：リンクのみ"
-    )
+    @app_commands.command(name="set-xnotifytype", description="X通知の表示タイプを変更します")
+    @app_commands.describe(type="embed：内容も表示 / link：リンクのみ")
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_x(
+    async def set_xnotifytype(
         self,
         interaction: discord.Interaction,
-        channel: discord.TextChannel,
         type: Literal["embed", "link"] = "embed"
     ):
         self.guild_ref(interaction.guild.id).set(
-            {
-                "x_channel":     channel.id,
-                "x_notify_type": type,
-            },
+            {"x_notify_type": type},
             merge=True
         )
         type_label = "内容も表示（Embed）" if type == "embed" else "リンクのみ"
         await interaction.response.send_message(
-            f"✅ X通知チャンネルを {channel.mention} に設定しました。\n"
-            f"📋 通知タイプ：**{type_label}**",
+            f"✅ X通知タイプを **{type_label}** に変更しました。",
             ephemeral=True
         )
 
@@ -283,7 +275,7 @@ class XNotifier(commands.Cog):
 
     # ── エラー処理 ────────────────────────────────────────────────
 
-    @set_x.error
+    @set_xnotifytype.error
     @set_xaccount.error
     @x_list.error
     async def perm_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
