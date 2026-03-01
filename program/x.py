@@ -19,6 +19,7 @@ NITTER_INSTANCES = [
     "https://nitter.catsarch.com",
 ]
 
+
 async def fetch_rss(username: str) -> tuple[list, dict]:
     loop = asyncio.get_event_loop()
     for instance in NITTER_INSTANCES:
@@ -35,7 +36,7 @@ async def fetch_rss(username: str) -> tuple[list, dict]:
 class XNotifier(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
-        self.db  = db
+        self.db = db
         self.check_x.start()
 
     def cog_unload(self):
@@ -64,7 +65,7 @@ class XNotifier(commands.Cog):
         await self.bot.wait_until_ready()
 
     async def _check_guild(self, guild: discord.Guild):
-        doc  = self.guild_ref(guild.id).get()
+        doc = self.guild_ref(guild.id).get()
         data = doc.to_dict() if doc.exists else {}
 
         channel_id = data.get("x_channel")
@@ -74,7 +75,6 @@ class XNotifier(commands.Cog):
         if not channel:
             return
 
-        # 通知タイプ（"embed" or "link"、デフォルトは "embed"）
         notify_type = data.get("x_notify_type", "embed")
 
         accounts = list(self.x_col(guild.id).stream())
@@ -84,14 +84,13 @@ class XNotifier(commands.Cog):
         for acc_doc in accounts:
             acc_data = acc_doc.to_dict()
             username = acc_data.get("username")
-            last_id  = acc_data.get("last_tweet_id")
+            last_id = acc_data.get("last_tweet_id")
 
             if not username:
                 continue
 
             entries, feed_info = await fetch_rss(username)
             if not entries:
-                print(f"[X] @{username} RSS取得失敗（全インスタンス試行済み）")
                 continue
 
             if not last_id:
@@ -109,8 +108,12 @@ class XNotifier(commands.Cog):
             for entry in reversed(to_notify):
                 if notify_type == "link":
                     await channel.send(self._make_link(entry, username))
+                elif notify_type == "fxtwitter":
+                    await channel.send(self._make_fxtwitter(entry, username))
                 else:
-                    await channel.send(embed=self._make_embed(entry, username, feed_info))
+                    await channel.send(
+                        embed=self._make_embed(entry, username, feed_info)
+                    )
                 await asyncio.sleep(1)
 
             if to_notify:
@@ -126,21 +129,26 @@ class XNotifier(commands.Cog):
             if instance in link:
                 link = link.replace(instance, "https://x.com")
                 break
+        return link
 
-        title    = entry.get("title", "")
-        summary  = entry.get("summary", "")
-        is_rt    = summary.startswith("RT @")
-        is_reply = title.startswith("R to @")
-        label    = "🔁" if is_rt else ("↩️" if is_reply else "🐦")
+    # ── fxTwitter ────────────────────────────────────────────────
 
-        return f"{link}"
+    def _make_fxtwitter(self, entry: dict, username: str) -> str:
+        link = entry.get("link", f"https://x.com/{username}")
+
+        for instance in NITTER_INSTANCES:
+            if instance in link:
+                link = link.replace(instance, "https://x.com")
+                break
+
+        return link.replace("https://x.com", "https://fxtwitter.com")
 
     # ── Embed ─────────────────────────────────────────────────────
 
     def _make_embed(self, entry: dict, username: str, feed_info: dict) -> discord.Embed:
-        title     = entry.get("title", "")
-        link      = entry.get("link", f"https://x.com/{username}")
-        summary   = entry.get("summary", "")
+        title = entry.get("title", "")
+        link = entry.get("link", f"https://x.com/{username}")
+        summary = entry.get("summary", "")
         published = entry.get("published_parsed")
 
         for instance in NITTER_INSTANCES:
@@ -148,7 +156,7 @@ class XNotifier(commands.Cog):
                 link = link.replace(instance, "https://x.com")
                 break
 
-        is_rt    = summary.startswith("RT @")
+        is_rt = summary.startswith("RT @")
         is_reply = title.startswith("R to @")
 
         color = 0x1DA1F2
@@ -163,8 +171,10 @@ class XNotifier(commands.Cog):
             url=link
         )
 
-        icon_url     = feed_info.get("image", {}).get("href") or \
-                       "https://abs.twimg.com/favicons/twitter.3.ico"
+        icon_url = (
+            feed_info.get("image", {}).get("href")
+            or "https://abs.twimg.com/favicons/twitter.3.ico"
+        )
         display_name = feed_info.get("title", f"@{username}").strip()
 
         embed.set_author(
@@ -182,21 +192,31 @@ class XNotifier(commands.Cog):
         return embed
 
     # ── /set-xnotifytype ─────────────────────────────────────────
-    # 通知タイプのみ変更（チャンネル設定は /set-channel type:x で行う）
 
-    @app_commands.command(name="set-xnotifytype", description="X通知の表示タイプを変更します")
-    @app_commands.describe(type="embed：内容も表示 / link：リンクのみ")
+    @app_commands.command(
+        name="set-xnotifytype",
+        description="X通知の表示タイプを変更します"
+    )
+    @app_commands.describe(
+        type="embed：内容表示 / link：リンクのみ / fxtwitter：展開リンク"
+    )
     @app_commands.checks.has_permissions(administrator=True)
     async def set_xnotifytype(
         self,
         interaction: discord.Interaction,
-        type: Literal["embed", "link"] = "embed"
+        type: Literal["embed", "link", "fxtwitter"] = "embed"
     ):
         self.guild_ref(interaction.guild.id).set(
             {"x_notify_type": type},
             merge=True
         )
-        type_label = "内容も表示（Embed）" if type == "embed" else "リンクのみ"
+
+        type_label = {
+            "embed": "内容も表示（Embed）",
+            "link": "リンクのみ",
+            "fxtwitter": "fxTwitter（展開リンク）"
+        }[type]
+
         await interaction.response.send_message(
             f"✅ X通知タイプを **{type_label}** に変更しました。",
             ephemeral=True
@@ -204,14 +224,13 @@ class XNotifier(commands.Cog):
 
     # ── /set-xaccount ────────────────────────────────────────────
 
-    @app_commands.command(name="set-xaccount", description="通知するXアカウントを追加・削除します")
+    @app_commands.command(
+        name="set-xaccount",
+        description="通知するXアカウントを追加・削除します"
+    )
     @app_commands.describe(username="XのユーザーID（@なし）")
     @app_commands.checks.has_permissions(administrator=True)
-    async def set_xaccount(
-        self,
-        interaction: discord.Interaction,
-        username: str
-    ):
+    async def set_xaccount(self, interaction: discord.Interaction, username: str):
         await interaction.response.defer(ephemeral=True)
         username = username.lstrip("@").strip()
         ref = self.x_col(interaction.guild.id).document(username)
@@ -226,35 +245,38 @@ class XNotifier(commands.Cog):
             entries, _ = await fetch_rss(username)
             if not entries:
                 await interaction.followup.send(
-                    f"❌ **@{username}** のRSSを取得できませんでした。\n"
-                    f"ユーザー名が正しいか確認してください。",
+                    f"❌ **@{username}** のRSSを取得できませんでした。",
                     ephemeral=True
                 )
                 return
 
             ref.set({
-                "username":      username,
-                "last_tweet_id": entries[0].get("id", ""),
+                "username": username,
+                "last_tweet_id": entries[0].get("id", "")
             })
             await interaction.followup.send(
-                f"✅ **@{username}** の新着ポストを通知するよう設定しました。\n"
-                f"📋 次回チェックから通知が始まります（最大5分）",
+                f"✅ **@{username}** の通知を設定しました。",
                 ephemeral=True
             )
 
     # ── /x-list ──────────────────────────────────────────────────
 
-    @app_commands.command(name="x-list", description="通知中のXアカウント一覧を表示します")
+    @app_commands.command(name="x-list", description="通知中のXアカウント一覧")
     @app_commands.checks.has_permissions(administrator=True)
     async def x_list(self, interaction: discord.Interaction):
         docs = list(self.x_col(interaction.guild.id).stream())
-        doc  = self.guild_ref(interaction.guild.id).get()
+        doc = self.guild_ref(interaction.guild.id).get()
         data = doc.to_dict() if doc.exists else {}
 
-        channel_id      = data.get("x_channel")
+        channel_id = data.get("x_channel")
         channel_mention = f"<#{channel_id}>" if channel_id else "未設定"
-        notify_type     = data.get("x_notify_type", "embed")
-        type_label      = "内容も表示（Embed）" if notify_type == "embed" else "リンクのみ"
+
+        notify_type = data.get("x_notify_type", "embed")
+        type_label = {
+            "embed": "内容も表示（Embed）",
+            "link": "リンクのみ",
+            "fxtwitter": "fxTwitter（展開リンク）"
+        }.get(notify_type, "内容も表示（Embed）")
 
         if not docs:
             await interaction.response.send_message(
@@ -278,10 +300,15 @@ class XNotifier(commands.Cog):
     @set_xnotifytype.error
     @set_xaccount.error
     @x_list.error
-    async def perm_error(self, interaction: discord.Interaction, error: app_commands.AppCommandError):
+    async def perm_error(
+        self,
+        interaction: discord.Interaction,
+        error: app_commands.AppCommandError
+    ):
         if isinstance(error, app_commands.MissingPermissions):
             await interaction.response.send_message(
-                "❌ このコマンドは管理者のみ使用できます。", ephemeral=True
+                "❌ このコマンドは管理者のみ使用できます。",
+                ephemeral=True
             )
 
 
