@@ -1,6 +1,45 @@
 import discord
 from discord.ext import commands
 from discord import app_commands
+from datetime import datetime, timezone
+
+
+# ── ユーティリティ ────────────────────────────────────────────────
+
+def progress_bar(current: int, per_level: int, length: int = 10) -> str:
+    """塗りつぶしブロックでレベルの進捗バーを生成"""
+    filled = int((current % per_level) / per_level * length)
+    return "█" * filled + "░" * (length - filled)
+
+def level_exp_needed(level: int) -> int:
+    """レベルアップに必要な累計exp（例：50 × level）"""
+    return 50 * level
+
+def rank_badge(level: int) -> str:
+    if level >= 20: return "👑"
+    if level >= 10: return "💎"
+    if level >= 5:  return "🥇"
+    if level >= 3:  return "🥈"
+    return "🥉"
+
+def steal_rank(level: int) -> str:
+    if level >= 10: return "🕷 シャドウマスター"
+    if level >= 7:  return "🗡 ゴーストシーフ"
+    if level >= 5:  return "🎭 プロスリ"
+    if level >= 3:  return "🃏 コソ泥"
+    return "👣 見習い"
+
+def coin_bar(coins: int, bank: int) -> str:
+    """所持金と銀行のバランスを視覚化（10マス）"""
+    total = coins + bank
+    if total <= 0:
+        return "░" * 10
+    ratio = min(coins / total, 1.0)
+    filled = int(ratio * 10)
+    return "▰" * filled + "▱" * (10 - filled)
+
+
+# ── Cog ──────────────────────────────────────────────────────────
 
 class Profile(commands.Cog):
     def __init__(self, bot, db):
@@ -17,50 +56,118 @@ class Profile(commands.Cog):
             if "work_level" not in data: data["work_level"] = 1
             if "dollar"     not in data: data["dollar"]     = 0.0
             return data
-        else:
-            return {"coins": 0, "bank": 0, "work_level": 1, "dollar": 0.0}
+        return {"coins": 0, "bank": 0, "work_level": 1, "dollar": 0.0}
 
     @app_commands.command(name="profile", description="自分のプロフィールを表示します")
     async def profile(self, interaction: discord.Interaction):
         user = interaction.user
         data = await self.get_user_data(user.id)
 
-        coins      = data.get("coins", 0)
-        bank       = data.get("bank", 0)
-        work_level = data.get("work_level", 1)
-        dollar     = data.get("dollar", 0.0)
+        coins       = data.get("coins", 0)
+        bank        = data.get("bank", 0)
+        work_level  = data.get("work_level", 1)
+        dollar      = data.get("dollar", 0.0)
         steal_level = data.get("steal_level", 1)
         steal_exp   = data.get("steal_exp", 0)
-        total = coins + bank
+        total       = coins + bank
 
-        # 借金状態で赤、通常は blurple
-        color = discord.Color.red() if coins < 0 else discord.Color.blurple()
+        # ── カラー ──────────────────────────────────────────────
+        if coins < 0:
+            color = 0xE74C3C   # 赤：借金
+        elif total >= 100_000:
+            color = 0xF1C40F   # 金：富豪
+        elif total >= 10_000:
+            color = 0x2ECC71   # 緑：余裕
+        else:
+            color = 0x5865F2   # blurple：通常
 
-        embed = discord.Embed(
-            title=f"👤 {user.display_name} のプロフィール",
-            color=color
+        # ── 所持金表示 ────────────────────────────────────────────
+        if coins < 0:
+            coins_display = f"**⚠️ -{abs(coins):,}** コイン　*借金中*"
+        else:
+            coins_display = f"**{coins:,}** コイン"
+
+        if total < 0:
+            total_display = f"**⚠️ -{abs(total):,}** コイン　*債務超過*"
+        else:
+            total_display = f"**{total:,}** コイン"
+
+        # ── 職業レベル進捗 ────────────────────────────────────────
+        work_exp_needed = level_exp_needed(work_level)
+        work_exp_current = data.get("work_exp", 0)
+        work_bar = progress_bar(work_exp_current, work_exp_needed)
+        work_display = (
+            f"{rank_badge(work_level)} **Lv.{work_level}**\n"
+            f"`{work_bar}` {work_exp_current}/{work_exp_needed} exp"
         )
 
-        # 所持金：借金なら ⚠️ 表示
-        if coins < 0:
-            coins_display = f"⚠️ **-{abs(coins)} コイン（借金）**"
-        else:
-            coins_display = f"{coins:,} コイン"
+        # ── 窃盗レベル進捗 ────────────────────────────────────────
+        steal_exp_needed = level_exp_needed(steal_level)
+        steal_bar = progress_bar(steal_exp, steal_exp_needed)
+        steal_display = (
+            f"{steal_rank(steal_level)} **Lv.{steal_level}**\n"
+            f"`{steal_bar}` {steal_exp}/{steal_exp_needed} exp"
+        )
 
-        # 合計資産：マイナスになる場合も対応
-        if total < 0:
-            total_display = f"⚠️ **-{abs(total):,} コイン（債務超過）**"
-        else:
-            total_display = f"{total:,} コイン"
+        # ── 資産バランス ──────────────────────────────────────────
+        bar = coin_bar(max(coins, 0), bank)
+        asset_display = (
+            f"手持ち {bar} 銀行\n"
+            f"💰 `{max(coins,0):,}` ＋ 🏦 `{bank:,}`　＝　{total_display}"
+        )
 
-        embed.add_field(name="💰 所持金",    value=coins_display,            inline=True)
-        embed.add_field(name="🏦 銀行残高",  value=f"{bank:,} コイン",       inline=True)
-        embed.add_field(name="💵 所持ドル",  value=f"${dollar:,.2f} USD",    inline=True)
-        embed.add_field(name="💼 職業レベル", value=f"Lv.{work_level}",       inline=True)
-        embed.add_field(name="💀 窃盗レベル", value=f"Lv.{steal_level} ({steal_exp} exp)", inline=True)
-        embed.add_field(name="💰 合計資産",  value=total_display,            inline=False)
+        # ── Embed 構築 ────────────────────────────────────────────
+        embed = discord.Embed(color=color)
+
+        embed.set_author(
+            name=f"{user.display_name}  のプロフィール",
+            icon_url=user.display_avatar.url
+        )
 
         embed.set_thumbnail(url=user.display_avatar.url)
+
+        # セクション区切り
+        embed.add_field(
+            name="─────  所持金  ─────",
+            value=coins_display,
+            inline=True
+        )
+        embed.add_field(
+            name="─────  銀行残高  ─────",
+            value=f"**{bank:,}** コイン",
+            inline=True
+        )
+        embed.add_field(
+            name="─────  所持ドル  ─────",
+            value=f"**${dollar:,.2f}** USD",
+            inline=True
+        )
+
+        embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacer
+
+        embed.add_field(
+            name="💼  職業レベル",
+            value=work_display,
+            inline=True
+        )
+        embed.add_field(
+            name="💀  窃盗レベル",
+            value=steal_display,
+            inline=True
+        )
+
+        embed.add_field(name="\u200b", value="\u200b", inline=False)  # spacer
+
+        embed.add_field(
+            name="📊  資産バランス",
+            value=asset_display,
+            inline=False
+        )
+
+        embed.set_footer(
+            text=f"ID: {user.id}　•　{datetime.now(timezone.utc).strftime('%Y/%m/%d %H:%M')} UTC"
+        )
+
         await interaction.response.send_message(embed=embed)
 
 
