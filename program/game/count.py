@@ -1,8 +1,10 @@
 import discord
 from discord.ext import commands
+from discord import app_commands
 import re
 import ast
 import operator
+import math
 
 # 安全な演算子だけ許可
 OPERATORS = {
@@ -11,12 +13,28 @@ OPERATORS = {
     ast.Mult: operator.mul,
     ast.Div: operator.floordiv,
     ast.Mod: operator.mod,
+    ast.Pow: operator.pow,
 }
+
+def preprocess(expr: str) -> str:
+    """√4+1 → sqrt(4)+1、√(4+1) → sqrt(4+1) に変換する"""
+    # √(... ) → sqrt(... )
+    expr = re.sub(r"√\(", "sqrt(", expr)
+    # √数字 → sqrt(数字)
+    expr = re.sub(r"√(\d+)", r"sqrt(\1)", expr)
+    return expr
 
 def safe_eval(expr: str) -> int | None:
     try:
+        expr = preprocess(expr)
         node = ast.parse(expr, mode="eval").body
-        return _eval_node(node)
+        result = _eval_node(node)
+        # 結果が整数に変換できる場合のみ許可（√の結果が整数でない場合は弾く）
+        if isinstance(result, float):
+            if result.is_integer():
+                return int(result)
+            return None
+        return int(result)
     except Exception:
         return None
 
@@ -24,10 +42,15 @@ def _eval_node(node):
     if isinstance(node, ast.Num):
         return node.n
     if isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
-        return OPERATORS[type(node.op)](
-            _eval_node(node.left),
-            _eval_node(node.right)
-        )
+        left = _eval_node(node.left)
+        right = _eval_node(node.right)
+        return OPERATORS[type(node.op)](left, right)
+    # √x → x**0.5 のための単項処理（ast.Call で sqrt(x) 形式）
+    if isinstance(node, ast.Call):
+        if isinstance(node.func, ast.Name) and node.func.id == "sqrt":
+            if len(node.args) == 1:
+                arg = _eval_node(node.args[0])
+                return math.sqrt(arg)
     raise ValueError("Invalid expression")
 
 
@@ -35,6 +58,16 @@ class Count(commands.Cog):
     def __init__(self, bot: commands.Bot, db):
         self.bot = bot
         self.db = db
+
+    # ── Firestore 参照 ────────────────────────────────────────────
+
+    def count_ref(self, guild_id: int):
+        return (
+            self.db.collection("guilds")
+            .document(str(guild_id))
+            .collection("count")
+            .document("data")
+        )
 
     # -----------------------------
     # メッセージ監視
@@ -44,14 +77,13 @@ class Count(commands.Cog):
         if message.author.bot or not message.guild:
             return
 
-        guild_id = str(message.guild.id)
-        doc_ref = self.db.collection("guilds").document(guild_id)
+        doc_ref = self.count_ref(message.guild.id)
         doc = doc_ref.get()
         if not doc.exists:
             return
 
         data = doc.to_dict()
-        count_channel = data.get("count_channel")
+        count_channel = data.get("channel")
         current_count = data.get("count", 1)
         recent_authors: list = data.get("recent_authors", [])
 
@@ -59,7 +91,8 @@ class Count(commands.Cog):
             return
 
         content = message.content.replace(" ", "")
-        if not re.fullmatch(r"[0-9+\-*/%]+", content):
+        # sqrt() と数字・演算子を許可
+        if not re.fullmatch(r"[0-9+\-*/%\*\*()sqrta-z√]+", content):
             return
 
         value = safe_eval(content)
@@ -75,7 +108,8 @@ class Count(commands.Cog):
             doc_ref.update({
                 "count": 1,
                 "recent_authors": [],
-                "last_correct_message_id": None
+                "last_correct_message_id": None,
+                "mistakes": data.get("mistakes", 0) + 1,
             })
             await message.add_reaction("🚫")
             await message.channel.send(
@@ -92,14 +126,17 @@ class Count(commands.Cog):
             doc_ref.update({
                 "count": current_count + 1,
                 "recent_authors": new_history,
-                "last_correct_message_id": message.id
+                "last_correct_message_id": message.id,
+                "corrects": data.get("corrects", 0) + 1,
+                "best": max(data.get("best", 0), current_count),
             })
             await message.add_reaction("✅")
         else:
             doc_ref.update({
                 "count": 1,
                 "recent_authors": [],
-                "last_correct_message_id": None
+                "last_correct_message_id": None,
+                "mistakes": data.get("mistakes", 0) + 1,
             })
             await message.add_reaction("❌")
             await message.channel.send(
@@ -116,27 +153,49 @@ class Count(commands.Cog):
         if not message.guild:
             return
 
-        guild_id = str(message.guild.id)
-        doc_ref = self.db.collection("guilds").document(guild_id)
-        doc = doc_ref.get()
+        doc = self.count_ref(message.guild.id).get()
         if not doc.exists:
             return
 
         data = doc.to_dict()
-        count_channel = data.get("count_channel")
+        count_channel = data.get("channel")
         last_id = data.get("last_correct_message_id")
         current_count = data.get("count", 1)
 
         if message.channel.id != count_channel:
             return
 
-        # 最新の正解メッセージが消された場合
         if last_id and message.id == last_id:
-            channel = message.channel
-            await channel.send(
+            await message.channel.send(
                 f"🗑️ 最新の数字が削除されたので再送します\n"
                 f"➡️ **次は `{current_count}` です**"
             )
+
+    # -----------------------------
+    # /count-stats
+    # -----------------------------
+    @app_commands.command(name="count-stats", description="カウントゲームの統計を表示します")
+    async def count_stats(self, interaction: discord.Interaction):
+        doc = self.count_ref(interaction.guild.id).get()
+
+        if not doc.exists:
+            await interaction.response.send_message("❌ データが見つかりません。", ephemeral=True)
+            return
+
+        data = doc.to_dict()
+        best = data.get("best", 0)
+        total_correct = data.get("corrects", 0)
+        total_mistake = data.get("mistakes", 0)
+        total = total_correct + total_mistake
+        accuracy = f"{total_correct / total * 100:.1f}%" if total > 0 else "N/A"
+
+        embed = discord.Embed(title="📊 カウントゲーム 統計", color=0x1DA1F2)
+        embed.add_field(name="🏆 最高記録", value=f"`{best}`", inline=True)
+        embed.add_field(name="✅ 総正解数", value=f"`{total_correct}` 回", inline=True)
+        embed.add_field(name="❌ 総ミス数", value=f"`{total_mistake}` 回", inline=True)
+        embed.add_field(name="🎯 正解率", value=f"`{accuracy}`", inline=True)
+
+        await interaction.response.send_message(embed=embed)
 
 
 async def setup(bot: commands.Bot, db):
