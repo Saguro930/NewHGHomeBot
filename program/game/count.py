@@ -39,7 +39,10 @@ def safe_eval(expr: str) -> int | None:
         return None
 
 def _eval_node(node):
-    if isinstance(node, ast.Num):
+    # Python 3.8+ は ast.Constant を使う（ast.Num は非推奨）
+    if isinstance(node, ast.Constant) and isinstance(node.value, (int, float)):
+        return node.value
+    if isinstance(node, ast.Num):  # 旧バージョン互換
         return node.n
     if isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
         left = _eval_node(node.left)
@@ -87,7 +90,7 @@ class Count(commands.Cog):
         current_count = data.get("count", 1)
         recent_authors: list = data.get("recent_authors", [])
 
-        if message.channel.id != count_channel:
+        if not count_channel or message.channel.id != int(count_channel):
             return
 
         content = message.content.replace(" ", "")
@@ -162,7 +165,7 @@ class Count(commands.Cog):
         last_id = data.get("last_correct_message_id")
         current_count = data.get("count", 1)
 
-        if message.channel.id != count_channel:
+        if not count_channel or message.channel.id != int(count_channel):
             return
 
         if last_id and message.id == last_id:
