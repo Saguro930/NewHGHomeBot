@@ -100,10 +100,17 @@ class XNotifier(commands.Cog):
                 continue
 
             to_notify = []
+            found = False
             for entry in entries:
                 if entry.get("id", "") == last_id:
+                    found = True
                     break
                 to_notify.append(entry)
+
+            # last_id がエントリ内に見つからない場合（大量の投稿 or 取得範囲外）
+            # → 最新1件のみ通知してリセット（大量送信を防ぐ）
+            if not found:
+                to_notify = to_notify[:1]
 
             for entry in reversed(to_notify):
                 if notify_type == "link":
