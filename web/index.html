@@ -54,7 +54,7 @@
   <div class="fade-in">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
-      v1.0.1 リリース済み
+      v1.1.0 リリース済み
     </div>
     <h1 class="hero-title">
       ちょっと多機能な<br>
@@ -73,24 +73,68 @@
     <div class="section-header fade-in">
       <div class="section-label">// changelog</div>
       <h2>アップデート履歴</h2>
-    </div> 
-    
-    <div class="update-card latest open fade-in"> 
+    </div>
+
+    <!-- v1.1.0 LATEST -->
+    <div class="update-card latest open fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
-        <span class="version-tag new">v1.0.1</span>        
-        <h3>Liquid Glass テーマ追加</h3>  
+        <span class="version-tag new">v1.1.0</span>
+        <h3>Workシステム刷新・銀行利子・プロフィール強化</h3>
         <span class="chevron">▼</span>
       </div>
       <div class="update-body">
+
+        <p class="update-img-label">X 通知 — 大量送信バグ修正</p>
         <ul class="update-list">
-          <li>Liquid Glass テーマを新規追加</li> 
-          <li>半透明＋ブラーによるガラス表現</li>  
-          <li>ダークベースで可読性を維持</li>
-          <li>テーマ切り替えは既存トグルで対応</li>   
+          <li>Bot 再起動直後に既読済みツイートが一斉送信されるバグを修正</li>
+          <li>初回登録時に <code>last_tweet_id</code> が正しく保存されない問題を解消</li>
         </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">Work システム — 全面刷新</p>
+        <ul class="update-list">
+          <li>
+            <strong>職業システム追加</strong> —
+            レベルに応じて職業が解放・昇格。職業ごとに基本給・ボーナス係数が異なる
+          </li>
+          <li>
+            <strong>ランダムイベント追加</strong> —
+            労働時にボーナス・ペナルティ・特別報酬などのランダムイベントが発生
+          </li>
+          <li>
+            <strong>連続労働ストリーク</strong> —
+            毎日 /work を続けると連続日数に応じてボーナス倍率が上昇。途切れるとリセット
+          </li>
+          <li>
+            <strong>累計獲得コイン記録</strong> —
+            /work で稼いだコインの累計を Firestore に記録。/profile で確認可能
+          </li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">銀行 — 日利 1% 利子追加</p>
+        <ul class="update-list">
+          <li>銀行に預けたコインに毎日 JST 0時で <strong>1% の利子</strong> が付く</li>
+          <li>利子は自動付与。次のログイン時または /balance 確認時に反映</li>
+          <li>利子計算は最終ログイン日から経過日数分をまとめて付与（複利）</li>
+        </ul>
+
+        <div class="update-divider"></div>
+
+        <p class="update-img-label">プロフィール — デザイン強化</p>
+        <ul class="update-list">
+          <li>職業・ストリーク日数・累計労働コインを新たに表示</li>
+          <li>銀行残高と所持コインを並列レイアウトで見やすく整理</li>
+          <li>借金時の赤色警告をより目立つデザインに変更</li>
+          <li>Embed カラーをレベル帯に応じてグラデーション変化</li>
+        </ul>
+
       </div>
     </div>
-    
+
+    <!-- v1.0.0 -->
     <div class="update-card fade-in">
       <div class="update-header" onclick="toggleUpdate(this)">
         <span class="version-tag">v1.0.0</span>
@@ -103,6 +147,8 @@
           <li>サイトを全面リニューアル。HTML / CSS を完全分離（index.html + style.css）</li>
           <li>ダークモード / ホワイトモード切り替え機能を追加。設定はブラウザに保存（localStorage）</li>
           <li>ナビバーにトグルスイッチ＋絵文字（🌙 / ☀️）を設置。デフォルトはダークモード</li>
+          <li>背景に3層の放射グラデーション mesh を追加し、全体的な視覚演出を強化</li>
+          <li>ヒーロータイトルをグラデーションテキスト化（blue → indigo → violet）</li>
         </ul>
         <div class="update-divider"></div>
         <p class="update-img-label">コマンド一覧をカテゴリ別に分類</p>
@@ -116,11 +162,14 @@
         <ul class="update-list">
           <li>X 通知の URL 変換に <strong>fxtwitter</strong>（fixupx.com）を新たに追加</li>
           <li>/set-xnotifytype で embed / link / fxtwitter の3種類から選択可能に</li>
+          <li>fxtwitter モードでは Discord 上でツイート内容がより正確にプレビュー表示される</li>
         </ul>
         <div class="update-divider"></div>
         <p class="update-img-label">カウント — メッセージ削除対応</p>
         <ul class="update-list">
-          <li>カウントのメッセージも削除してBot再送してくれるように</li>
+          <li>カウントチャンネルで不正なメッセージ（数字・式以外）を自動削除するように</li>
+          <li>間違ったカウントのメッセージも削除してチャンネルをクリーンに保つ</li>
+          <li>連続投稿制限（5回）によるリセット時も該当メッセージを削除</li>
         </ul>
       </div>
     </div>
@@ -574,7 +623,7 @@
       class="counter-img"
     >
   </div>
-  <div class="footer-copy">© 2026 HGHome Official &nbsp;·&nbsp; v1.0.0</div>
+  <div class="footer-copy">© 2026 HGHome Official &nbsp;·&nbsp; v1.1.0</div>
 </footer>
 
 <!-- Lightbox -->
