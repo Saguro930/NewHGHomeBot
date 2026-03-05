@@ -9,6 +9,53 @@ try:
     matplotlib.use("Agg")
     import matplotlib.pyplot as plt
     import matplotlib.ticker as mticker
+    from matplotlib import font_manager
+
+    # ── 日本語フォントを自動検出して設定（文字化け対策）──
+    _JP_FONT_CANDIDATES = [
+        "Noto Sans CJK JP",
+        "Noto Sans JP",
+        "IPAexGothic",
+        "IPAGothic",
+        "Hiragino Sans",          # macOS
+        "Yu Gothic",              # Windows
+        "MS Gothic",              # Windows fallback
+    ]
+    _jp_font = None
+    for _name in _JP_FONT_CANDIDATES:
+        if any(_name.lower() in f.name.lower() for f in font_manager.fontManager.ttflist):
+            _jp_font = _name
+            break
+
+    if _jp_font:
+        matplotlib.rcParams["font.family"] = _jp_font
+    else:
+        # フォールバック：システムにある ttf を直接探す
+        import os
+        _SEARCH_PATHS = [
+            "/usr/share/fonts",
+            "/usr/local/share/fonts",
+            os.path.expanduser("~/.fonts"),
+        ]
+        _FONT_KEYWORDS = ("noto", "ipa", "gothic", "cjk")
+        for _root in _SEARCH_PATHS:
+            if not os.path.isdir(_root):
+                continue
+            for _dirpath, _, _files in os.walk(_root):
+                for _fname in _files:
+                    if _fname.endswith(".ttf") and any(k in _fname.lower() for k in _FONT_KEYWORDS):
+                        font_manager.fontManager.addfont(os.path.join(_dirpath, _fname))
+                        matplotlib.rcParams["font.family"] = \
+                            font_manager.FontProperties(fname=os.path.join(_dirpath, _fname)).get_name()
+                        _jp_font = matplotlib.rcParams["font.family"]
+                        break
+                if _jp_font:
+                    break
+            if _jp_font:
+                break
+
+    matplotlib.rcParams["axes.unicode_minus"] = False  # マイナス記号の文字化け防止
+
     MATPLOTLIB_AVAILABLE = True
 except ImportError:
     MATPLOTLIB_AVAILABLE = False
