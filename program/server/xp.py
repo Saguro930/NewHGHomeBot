@@ -5,11 +5,18 @@ from datetime import datetime, timedelta, timezone
 
 JST = timezone(timedelta(hours=9))
 
+# ボイスXPレート：1分あたりのXP（週末は xp_multiplier() で2倍）
+VOICE_XP_PER_MINUTE = 10
+# 一度に付与するXPの上限（長時間放置対策）
+VOICE_XP_MAX_PER_SESSION = 600  # 最大60分相当
+
 
 class XP(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
         self.db  = db
+        # ボイス入室時刻を記録する辞書  key: (guild_id, user_id) → datetime(JST)
+        self._voice_join_times: dict[tuple[int, int], datetime] = {}
         self.daily_xp_report.start()
 
     def cog_unload(self):
@@ -75,33 +82,38 @@ class XP(commands.Cog):
             data["daily_date"] = today
         return data
 
-    # ── メッセージ受信でXP付与 ────────────────────────────
-    @commands.Cog.listener()
-    async def on_message(self, message: discord.Message):
-        if message.author.bot or not message.guild:
-            return
-
-        guild_id  = message.guild.id
-        user_id   = message.author.id
-        multi     = self.xp_multiplier()
-        gained_xp = int(self.calc_gained_xp(message.content) * multi)
-
-        data      = await self.get_user_data(guild_id, user_id)
+    # ── XP付与の共通処理（level_up通知つき）──────────────
+    async def _grant_xp(
+        self,
+        guild: discord.Guild,
+        member: discord.Member,
+        gained_xp: int,
+        add_to_daily: bool,
+        notify_channel: discord.TextChannel | None = None,
+        multi: float = 1.0,
+    ):
+        """
+        gained_xp を total_xp に加算してレベルを再計算する。
+        add_to_daily=False の場合は daily_xp を変更しない（ボイスXP用）。
+        notify_channel はレベルアップ通知の優先チャンネル（Noneなら設定チャンネル→フォールバック）。
+        """
+        data      = await self.get_user_data(guild.id, member.id)
         data      = self._reset_daily_xp_if_needed(data)
         old_level = data["level"]
 
         data["total_xp"] += gained_xp
-        data["daily_xp"] += gained_xp
+        if add_to_daily:
+            data["daily_xp"] += gained_xp
 
         new_level, current_xp, _ = self.calc_level(data["total_xp"])
         data["level"] = new_level
         data["xp"]    = current_xp
 
-        await self.set_user_data(guild_id, user_id, data)
+        await self.set_user_data(guild.id, member.id, data)
 
         # レベルアップ通知
         if new_level > old_level:
-            desc = f"{message.author.mention} が **レベル {new_level}** になりました！"
+            desc = f"{member.mention} が **レベル {new_level}** になりました！"
             if multi == 2.0:
                 desc += "\n🎊 週末ボーナスで獲得XPが **2倍** です！"
 
@@ -110,18 +122,88 @@ class XP(commands.Cog):
                 description=desc,
                 color=discord.Color.gold()
             )
-            embed.set_thumbnail(url=message.author.display_avatar.url)
+            embed.set_thumbnail(url=member.display_avatar.url)
 
-            guild_data = await self.get_guild_data(guild_id)
+            guild_data = await self.get_guild_data(guild.id)
             channel_id = guild_data.get("level_up_channel")
 
+            dest = None
             if channel_id:
-                channel = message.guild.get_channel(int(channel_id))
-                if channel:
-                    await channel.send(embed=embed)
-                    return
+                dest = guild.get_channel(int(channel_id))
+            if dest is None:
+                dest = notify_channel  # メッセージ受信チャンネル or None
 
-            await message.channel.send(embed=embed)
+            if dest:
+                await dest.send(embed=embed)
+
+    # ── メッセージ受信でXP付与 ────────────────────────────
+    @commands.Cog.listener()
+    async def on_message(self, message: discord.Message):
+        if message.author.bot or not message.guild:
+            return
+
+        multi     = self.xp_multiplier()
+        gained_xp = int(self.calc_gained_xp(message.content) * multi)
+
+        await self._grant_xp(
+            guild=message.guild,
+            member=message.author,
+            gained_xp=gained_xp,
+            add_to_daily=True,
+            notify_channel=message.channel,
+            multi=multi,
+        )
+
+    # ── ボイスチャンネルXP ────────────────────────────────
+    @commands.Cog.listener()
+    async def on_voice_state_update(
+        self,
+        member: discord.Member,
+        before: discord.VoiceState,
+        after: discord.VoiceState,
+    ):
+        if member.bot:
+            return
+
+        key = (member.guild.id, member.id)
+
+        # ── 入室（新しくチャンネルに入った／AFKから通常チャンネルへ移動）──
+        joined = (
+            after.channel is not None
+            and not after.afk                          # AFKチャンネルは対象外
+            and (before.channel is None or before.afk) # 未入室 or AFKから
+        )
+        # ── 退室（チャンネルを離れた／通常チャンネルからAFKへ移動）──
+        left = (
+            before.channel is not None
+            and not before.afk
+            and (after.channel is None or after.afk)
+        )
+
+        if joined:
+            self._voice_join_times[key] = datetime.now(JST)
+
+        elif left:
+            join_time = self._voice_join_times.pop(key, None)
+            if join_time is None:
+                return
+
+            minutes   = (datetime.now(JST) - join_time).total_seconds() / 60
+            if minutes < 1:
+                return  # 1分未満は付与しない
+
+            multi     = self.xp_multiplier()
+            gained_xp = int(min(minutes, VOICE_XP_MAX_PER_SESSION / VOICE_XP_PER_MINUTE)
+                            * VOICE_XP_PER_MINUTE * multi)
+
+            await self._grant_xp(
+                guild=member.guild,
+                member=member,
+                gained_xp=gained_xp,
+                add_to_daily=False,   # ← 日次レポートには含めない
+                notify_channel=None,
+                multi=multi,
+            )
 
     # ── 毎日0時にXPニュース送信 ───────────────────────────
 
@@ -212,6 +294,13 @@ class XP(commands.Cog):
 
         rank_position = await self.get_rank_position(interaction.guild.id, total_xp)
 
+        # 現在ボイスチャンネルに入室中なら経過時間を表示
+        key          = (interaction.guild.id, target.id)
+        voice_status = ""
+        if key in self._voice_join_times:
+            elapsed_min = int((datetime.now(JST) - self._voice_join_times[key]).total_seconds() / 60)
+            voice_status = f"🎙️ VC参加中（{elapsed_min}分経過）"
+
         embed = discord.Embed(
             title=f"📊 {target.display_name} のランク",
             color=discord.Color.blurple()
@@ -226,6 +315,8 @@ class XP(commands.Cog):
             value=f"**×{multi:.1f}**{'　🎉週末ボーナス中！' if multi == 2.0 else ''}",
             inline=True
         )
+        if voice_status:
+            embed.add_field(name="ボイス", value=voice_status, inline=True)
         embed.add_field(
             name=f"XP進捗 ({current_xp} / {xp_needed})",
             value=f"`{bar}` {int(current_xp / xp_needed * 100)}%",
