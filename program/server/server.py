@@ -65,6 +65,7 @@ class Server(commands.Cog):
                 "message_count": 0,
                 "member_join": 0,
                 "member_leave": 0,
+                "member_count": 0,
                 "reactions": {}
             }
         return self._cache[guild_id]
@@ -116,6 +117,8 @@ class Server(commands.Cog):
         self._reset_cache_if_new_day(member.guild.id)
         data = self._get_cache(member.guild.id)
         data["member_join"] += 1
+        # 現在のメンバー数スナップショットを保存（グラフ精度向上用）
+        data["member_count"] = member.guild.member_count
         self._mark_dirty(member.guild.id)
 
     @commands.Cog.listener()
@@ -123,6 +126,7 @@ class Server(commands.Cog):
         self._reset_cache_if_new_day(member.guild.id)
         data = self._get_cache(member.guild.id)
         data["member_leave"] += 1
+        data["member_count"] = member.guild.member_count
         self._mark_dirty(member.guild.id)
 
     @commands.Cog.listener()
@@ -167,7 +171,7 @@ class Server(commands.Cog):
         max_day = None
         max_msg = 0
         day_count = 0
-        daily_data = {}  # date_str -> {"msg": int, "join": int, "leave": int}
+        daily_data = {}
 
         for d in docs:
             data = d.to_dict()
@@ -192,6 +196,7 @@ class Server(commands.Cog):
                     "msg": msg,
                     "join": data.get("member_join", 0),
                     "leave": data.get("member_leave", 0),
+                    "member_count": data.get("member_count", 0),
                 }
 
         avg_msg = round(total_msg / day_count) if day_count else 0
@@ -220,7 +225,7 @@ class Server(commands.Cog):
     # ─── グラフ用データ取得 ────────────────────
 
     def fetch_daily_series(self, guild_id: int, days: int) -> dict:
-        """指定日数分の日次生データを返す {date_str: {msg, join, leave}}"""
+        """指定日数分の日次生データを返す"""
         start = (datetime.now(JST) - timedelta(days=days)).strftime("%Y-%m-%d")
         docs = (
             self.db.collection("guilds")
@@ -238,58 +243,106 @@ class Server(commands.Cog):
                     "msg": data.get("message_count", 0),
                     "join": data.get("member_join", 0),
                     "leave": data.get("member_leave", 0),
+                    "member_count": data.get("member_count", 0),
                 }
         return result
 
-    def _build_day_series(self, daily_data: dict, days: int):
-        """日単位：過去 days 日分のラベル・メッセージ・メンバー純増を返す"""
-        today = datetime.now(JST).date()
-        dates = [(today - timedelta(days=i)).strftime("%Y-%m-%d")
-                 for i in range(days - 1, -1, -1)]
-        labels   = [(today - timedelta(days=i)).strftime("%m/%d")
-                    for i in range(days - 1, -1, -1)]
-        msgs     = [daily_data.get(d, {}).get("msg", 0) for d in dates]
-        members  = [daily_data.get(d, {}).get("join", 0)
-                    - daily_data.get(d, {}).get("leave", 0) for d in dates]
-        return labels, msgs, members
+    def _reconstruct_counts(
+        self, daily_data: dict, dates: list[str], current_count: int
+    ) -> list[int]:
+        """
+        current_count（現在の総メンバー数）を起点に、
+        join/leave の記録を逆算して各日のメンバー数を復元する。
+        member_count スナップショットがある日はそちらを優先する。
+        """
+        n = len(dates)
+        counts = [0] * n
+        counts[-1] = current_count
 
-    def _build_week_series(self, daily_data: dict, num_weeks: int = 4):
-        """週単位：過去 num_weeks 週分に集計したラベル・メッセージ・メンバー純増を返す"""
+        # 末尾から逆向きに復元
+        for i in range(n - 2, -1, -1):
+            d_next = dates[i + 1]
+            join  = daily_data.get(d_next, {}).get("join",  0)
+            leave = daily_data.get(d_next, {}).get("leave", 0)
+            counts[i] = counts[i + 1] - join + leave
+
+        # スナップショットが存在する日はそこで補正
+        for i, d in enumerate(dates):
+            snap = daily_data.get(d, {}).get("member_count", 0)
+            if snap > 0:
+                counts[i] = snap
+
+        return counts
+
+    def _build_day_series(
+        self, daily_data: dict, days: int, current_count: int
+    ) -> tuple[list, list, list]:
+        """日単位：過去 days 日分のラベル・メッセージ数・メンバー数を返す"""
         today = datetime.now(JST).date()
+        dates  = [(today - timedelta(days=i)).strftime("%Y-%m-%d")
+                  for i in range(days - 1, -1, -1)]
+        labels = [(today - timedelta(days=i)).strftime("%m/%d")
+                  for i in range(days - 1, -1, -1)]
+        msgs   = [daily_data.get(d, {}).get("msg", 0) for d in dates]
+        counts = self._reconstruct_counts(daily_data, dates, current_count)
+        return labels, msgs, counts
+
+    def _build_week_series(
+        self, daily_data: dict, current_count: int, num_weeks: int = 4
+    ) -> tuple[list, list, list]:
+        """週単位：過去 num_weeks 週分のラベル・メッセージ数・週末メンバー数を返す"""
+        today = datetime.now(JST).date()
+        # まず全日付を逆算して counts を取得してからウィークリーに集約
+        total_days = num_weeks * 7 + 1
+        all_dates  = [(today - timedelta(days=i)).strftime("%Y-%m-%d")
+                      for i in range(total_days - 1, -1, -1)]
+        all_counts = self._reconstruct_counts(daily_data, all_dates, current_count)
+        count_map  = dict(zip(all_dates, all_counts))
+
         labels, msgs, members = [], [], []
         for w in range(num_weeks - 1, -1, -1):
             week_end   = today - timedelta(days=today.weekday() + 1 + w * 7)
             week_start = week_end - timedelta(days=6)
-            msg_sum = mem_sum = 0
+            msg_sum = 0
             cur = week_start
             while cur <= week_end:
                 d = cur.strftime("%Y-%m-%d")
                 msg_sum += daily_data.get(d, {}).get("msg", 0)
-                mem_sum += (daily_data.get(d, {}).get("join", 0)
-                            - daily_data.get(d, {}).get("leave", 0))
                 cur += timedelta(days=1)
             labels.append(week_start.strftime("%m/%d") + "週")
             msgs.append(msg_sum)
-            members.append(mem_sum)
+            # 週末（week_end）時点のメンバー数を採用
+            members.append(count_map.get(week_end.strftime("%Y-%m-%d"), 0))
         return labels, msgs, members
 
-    def _build_month_series(self, daily_data: dict, num_months: int = 6):
-        """月単位：過去 num_months ヶ月分に集計したラベル・メッセージ・メンバー純増を返す"""
+    def _build_month_series(
+        self, daily_data: dict, current_count: int, num_months: int = 6
+    ) -> tuple[list, list, list]:
+        """月単位：過去 num_months ヶ月分のラベル・メッセージ数・月末メンバー数を返す"""
         today = datetime.now(JST).date()
+        total_days = num_months * 31 + 1
+        all_dates  = [(today - timedelta(days=i)).strftime("%Y-%m-%d")
+                      for i in range(total_days - 1, -1, -1)]
+        all_counts = self._reconstruct_counts(daily_data, all_dates, current_count)
+        count_map  = dict(zip(all_dates, all_counts))
+
         labels, msgs, members = [], [], []
         for m in range(num_months - 1, -1, -1):
-            # 対象月の1日を計算
             year  = today.year  + (today.month - 1 - m) // 12
             month = (today.month - 1 - m) % 12 + 1
-            msg_sum = mem_sum = 0
             prefix = f"{year}-{month:02d}-"
+            msg_sum = 0
+            last_date_in_month = ""
             for date_str, v in daily_data.items():
                 if date_str.startswith(prefix):
                     msg_sum += v.get("msg", 0)
-                    mem_sum += v.get("join", 0) - v.get("leave", 0)
+                    if date_str > last_date_in_month:
+                        last_date_in_month = date_str
             labels.append(f"{month}月")
             msgs.append(msg_sum)
-            members.append(mem_sum)
+            # 月内で最後に記録のある日のメンバー数を採用（なければ逆算値）
+            members.append(count_map.get(last_date_in_month, 0) if last_date_in_month
+                           else count_map.get(prefix + "01", 0))
         return labels, msgs, members
 
     # ─── グラフ描画（共通） ────────────────────
@@ -326,20 +379,14 @@ class Server(commands.Cog):
         ax1.fill_between(xs, msg_values, alpha=0.15, color="#5865f2")
         ax1.set_ylabel("メッセージ数", color="white", fontsize=9)
         ax1.yaxis.set_major_locator(mticker.MaxNLocator(integer=True, nbins=5))
-        ax1.set_xticklabels([])  # 上段はラベル非表示
+        ax1.set_xticklabels([])
         ax1.set_title(title, color="white", fontsize=12, pad=10)
 
-        # ── メンバー純増（折れ線）
+        # ── メンバー数（折れ線）
         ax2.plot(xs, member_values, color="#57f287", linewidth=2,
                  marker="o", markersize=4, zorder=3)
-        ax2.fill_between(xs, member_values,
-                         where=[v >= 0 for v in member_values],
-                         alpha=0.15, color="#57f287")
-        ax2.fill_between(xs, member_values,
-                         where=[v < 0 for v in member_values],
-                         alpha=0.15, color="#ed4245")
-        ax2.axhline(0, color="#72767d", linewidth=0.8)
-        ax2.set_ylabel("メンバー純増", color="white", fontsize=9)
+        ax2.fill_between(xs, member_values, alpha=0.15, color="#57f287")
+        ax2.set_ylabel("メンバー数", color="white", fontsize=9)
         ax2.yaxis.set_major_locator(mticker.MaxNLocator(integer=True, nbins=4))
         ax2.set_xticklabels(labels, rotation=30, ha="right", color="white")
 
@@ -380,16 +427,15 @@ class Server(commands.Cog):
                 color=discord.Color.blurple(),
                 timestamp=now
             )
-            embed.add_field(name="💬 メッセージ数", value=f"{data.get('message_count',0)} 件")
+            embed.add_field(name="💬 メッセージ数", value=f"{data.get('message_count', 0)} 件")
             embed.add_field(
-                name="👥 メンバー増減",
-                value=f"{data.get('member_join',0)-data.get('member_leave',0)} 人"
+                name="👥 メンバー数",
+                value=f"{guild.member_count} 人"
             )
             embed.add_field(name="🏆 リアクション Top3", value=top_emoji, inline=False)
 
-            # グラフ：過去7日を日単位で表示
             daily_data = self.fetch_daily_series(guild.id, 7)
-            labels, msgs, members = self._build_day_series(daily_data, 7)
+            labels, msgs, members = self._build_day_series(daily_data, 7, guild.member_count)
             chart_buf = self._make_line_chart(labels, msgs, members, "過去7日間の推移")
             if chart_buf:
                 file = discord.File(chart_buf, filename="daily_chart.png")
@@ -427,9 +473,8 @@ class Server(commands.Cog):
             embed.add_field(name="🔥 今週一番アクティブだった日", value=stats["active_day"], inline=False)
             embed.add_field(name="🏅 絵文字ランキング Top5", value=stats["emoji_rank"], inline=False)
 
-            # グラフ：過去4週を週単位で表示
             daily_data = self.fetch_daily_series(guild.id, 28)
-            labels, msgs, members = self._build_week_series(daily_data, num_weeks=4)
+            labels, msgs, members = self._build_week_series(daily_data, guild.member_count, num_weeks=4)
             chart_buf = self._make_line_chart(labels, msgs, members, "過去4週間の推移")
             if chart_buf:
                 file = discord.File(chart_buf, filename="weekly_chart.png")
@@ -464,9 +509,8 @@ class Server(commands.Cog):
             embed.add_field(name="🔥 今月一番アクティブだった日", value=stats["active_day"], inline=False)
             embed.add_field(name="🏆 絵文字ランキング Top5", value=stats["emoji_rank"], inline=False)
 
-            # グラフ：過去6ヶ月を月単位で表示
             daily_data = self.fetch_daily_series(guild.id, 183)
-            labels, msgs, members = self._build_month_series(daily_data, num_months=6)
+            labels, msgs, members = self._build_month_series(daily_data, guild.member_count, num_months=6)
             chart_buf = self._make_line_chart(labels, msgs, members, "過去6ヶ月の推移")
             if chart_buf:
                 file = discord.File(chart_buf, filename="monthly_chart.png")
