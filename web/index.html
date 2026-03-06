@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>HGHomeBot+</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
-<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@400;500&family=Noto+Sans+JP:wght@300;400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=IBM+Plex+Mono:wght@400;500;600&family=Noto+Sans+JP:wght@300;400;500;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="style.css">
 </head>
 
@@ -17,24 +17,22 @@
     <div class="orb orb-1"></div>
     <div class="orb orb-2"></div>
     <div class="orb orb-3"></div>
-    <div class="orb orb-4"></div>
-    <div class="orb orb-5"></div>
   </div>
 </div>
 
 <!-- ── Navigation ── -->
 <nav>
-  <a href="#home" class="nav-logo">HGHome<span class="accent-text">Bot+</span></a>
+  <a href="#home" class="nav-logo">HGHOME<span class="accent-text">BOT+</span></a>
   <div class="nav-right">
     <div class="nav-links">
-      <a href="#home">ホーム</a>
-      <a href="#roadmap">ロードマップ</a>
-      <a href="#commands">コマンド</a>
-      <a href="#other">その他</a>
+      <a href="#home">HOME</a>
+      <a href="#roadmap">ROADMAP</a>
+      <a href="#commands">COMMANDS</a>
+      <a href="#other">OTHER</a>
     </div>
     <button class="theme-btn" id="themeBtn" aria-label="テーマ切り替え">
       <span class="theme-icon" id="themeIcon">🌙</span>
-      <span class="theme-label" id="themeLabel">Dark</span>
+      <span class="theme-label" id="themeLabel">DARK</span>
     </button>
     <div class="hamburger" id="hamburger">
       <span></span><span></span><span></span>
@@ -43,36 +41,59 @@
 </nav>
 
 <div class="mobile-menu" id="mobileMenu">
-  <a href="#home"     onclick="closeMobile()">ホーム</a>
-  <a href="#roadmap"  onclick="closeMobile()">ロードマップ</a>
-  <a href="#commands" onclick="closeMobile()">コマンド</a>
-  <a href="#other"    onclick="closeMobile()">その他</a>
+  <a href="#home"     onclick="closeMobile()">HOME</a>
+  <a href="#roadmap"  onclick="closeMobile()">ROADMAP</a>
+  <a href="#commands" onclick="closeMobile()">COMMANDS</a>
+  <a href="#other"    onclick="closeMobile()">OTHER</a>
 </div>
 
 <!-- ═══════ HOME ═══════ -->
 <section id="home">
+  <span class="section-num">01</span>
   <div class="fade-in">
     <div class="hero-badge">
       <span class="hero-badge-dot"></span>
       <span id="heroBadgeText">読み込み中…</span>
     </div>
     <h1 class="hero-title">
-      ちょっと多機能な<br>
-      <span class="grad">管理 &amp; カジノ</span><br>
-      Discord Bot
+      ちょっと<br>
+      <span class="grad">多機能な</span><br>
+      BOT
     </h1>
     <p class="hero-sub">
-      深夜テンションで作った…<br>
-      ProBotのXP有料化をきっかけにXP機能が追加されました。
+      深夜テンションで作った。<br>
+      ProBotのXP有料化をきっかけに<br>
+      XP機能が追加されました。
     </p>
-    <a href="#" class="btn">サーバーに追加できると思ったかぁあ？</a>
+    <a href="#" class="btn"><span>サーバーに追加できると思ったかぁあ？</span></a>
+  </div>
+
+  <!-- Status bar -->
+  <div class="status-bar fade-in" style="margin-top:56px;">
+    <div class="status-item">
+      <div class="status-key">ROLE</div>
+      <div class="status-val">管理 &amp; カジノ</div>
+    </div>
+    <div class="status-item">
+      <div class="status-key">STATUS</div>
+      <div class="status-val" style="color:var(--green);">● ONLINE</div>
+    </div>
+    <div class="status-item">
+      <div class="status-key">VERSION</div>
+      <div class="status-val" id="statusVersion">—</div>
+    </div>
+    <div class="status-item">
+      <div class="status-key">PLATFORM</div>
+      <div class="status-val">DISCORD</div>
+    </div>
   </div>
 
   <!-- Changelog -->
-  <div style="margin-top:72px;">
+  <div style="margin-top:80px;">
     <div class="section-header fade-in">
-      <div class="section-label">// changelog</div>
-      <h2>アップデート履歴</h2>
+      <div class="section-label">changelog</div>
+      <h2>UPDATE<br><span class="line-accent">HISTORY</span></h2>
+      <div class="sec-divider"></div>
     </div>
     <div id="changelog-container"></div>
   </div>
@@ -80,10 +101,12 @@
 
 <!-- ═══════ ROADMAP ═══════ -->
 <section id="roadmap">
+  <span class="section-num">02</span>
   <div class="section-header fade-in">
-    <div class="section-label">// roadmap</div>
-    <h2>開発予定</h2>
-    <p class="section-desc">今後追加・改善予定の機能</p>
+    <div class="section-label">roadmap</div>
+    <h2>開発<br><span class="line-accent">予定</span></h2>
+    <div class="sec-divider"></div>
+    <p class="section-desc">// 今後追加・改善予定の機能</p>
   </div>
   <div class="roadmap-grid">
     <div class="roadmap-item fade-in"><span class="roadmap-icon">🔢</span><p>カウントの継続率表示</p></div>
@@ -99,20 +122,24 @@
 
 <!-- ═══════ COMMANDS ═══════ -->
 <section id="commands">
+  <span class="section-num">03</span>
   <div class="section-header fade-in">
-    <div class="section-label">// commands</div>
-    <h2>コマンド一覧</h2>
-    <p class="section-desc">カテゴリ別に整理されたコマンド</p>
+    <div class="section-label">commands</div>
+    <h2>コマンド<br><span class="line-accent">一覧</span></h2>
+    <div class="sec-divider"></div>
+    <p class="section-desc">// カテゴリ別に整理されたコマンド</p>
   </div>
   <div class="command-categories" id="commands-container"></div>
 </section>
 
 <!-- ═══════ OTHER ═══════ -->
 <section id="other">
+  <span class="section-num">04</span>
   <div class="section-header fade-in">
-    <div class="section-label">// other</div>
-    <h2>その他</h2>
-    <p class="section-desc">連絡先・外部リンク</p>
+    <div class="section-label">other</div>
+    <h2>その他<br><span class="line-accent">リンク</span></h2>
+    <div class="sec-divider"></div>
+    <p class="section-desc">// 連絡先・外部リンク</p>
   </div>
 
   <div class="discord-wrap fade-in">
@@ -144,28 +171,26 @@
       class="counter-img"
     >
   </div>
-  <div class="footer-copy" id="footerCopy">© 2026 HGHome Official · …</div>
+  <div class="footer-copy" id="footerCopy">© 2026 HGHOME OFFICIAL · …</div>
 </footer>
 
 <!-- Lightbox -->
 <div class="lightbox" id="lightbox" onclick="closeLightbox()">
-  <div class="lightbox-close" onclick="closeLightbox()">✕</div>
+  <div class="lightbox-close" onclick="closeLightbox()">[ ✕ ]</div>
   <img id="lightboxImg" src="" alt="">
 </div>
 
 <script>
-/* ═══════════════════════════════════════════
-   Theme
-═══════════════════════════════════════════ */
+/* ── Theme ── */
 const html      = document.documentElement;
 const themeBtn  = document.getElementById('themeBtn');
 const themeIcon = document.getElementById('themeIcon');
 const themeLbl  = document.getElementById('themeLabel');
 
 const THEMES = [
-  { key: 'dark',  icon: '🌙', label: 'Dark'  },
-  { key: 'light', icon: '☀️', label: 'Light' },
-  { key: 'glass', icon: '🫧', label: 'Glass' },
+  { key:'dark',  icon:'🌙', label:'DARK'  },
+  { key:'light', icon:'☀️', label:'LIGHT' },
+  { key:'glass', icon:'🫧', label:'GLASS' },
 ];
 
 function applyTheme(key) {
@@ -183,9 +208,7 @@ function cycleTheme() {
 applyTheme(localStorage.getItem('theme') || 'dark');
 themeBtn.addEventListener('click', cycleTheme);
 
-/* ═══════════════════════════════════════════
-   Hamburger
-═══════════════════════════════════════════ */
+/* ── Hamburger ── */
 const hamburger  = document.getElementById('hamburger');
 const mobileMenu = document.getElementById('mobileMenu');
 hamburger.addEventListener('click', () => {
@@ -197,16 +220,12 @@ function closeMobile() {
   mobileMenu.classList.remove('open');
 }
 
-/* ═══════════════════════════════════════════
-   Accordion
-═══════════════════════════════════════════ */
+/* ── Accordion ── */
 function toggleUpdate(header) {
   header.closest('.update-card').classList.toggle('open');
 }
 
-/* ═══════════════════════════════════════════
-   Lightbox
-═══════════════════════════════════════════ */
+/* ── Lightbox ── */
 function openLightbox(src) {
   document.getElementById('lightboxImg').src = src;
   document.getElementById('lightbox').classList.add('active');
@@ -215,9 +234,7 @@ function closeLightbox() {
   document.getElementById('lightbox').classList.remove('active');
 }
 
-/* ═══════════════════════════════════════════
-   Scroll fade
-═══════════════════════════════════════════ */
+/* ── Scroll Fade ── */
 const observer = new IntersectionObserver((entries) => {
   entries.forEach((e, i) => {
     if (e.isIntersecting) {
@@ -230,11 +247,7 @@ function observeAll() {
   document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
 }
 
-/* ═══════════════════════════════════════════
-   Builders
-═══════════════════════════════════════════ */
-
-/** セクション内の images ブロックを HTML 文字列で返す */
+/* ── Builders ── */
 function buildImages(images) {
   if (!images) return '';
   if (images.type === 'single') {
@@ -254,7 +267,6 @@ function buildImages(images) {
   return '';
 }
 
-/** update エントリひとつ分の HTML を返す */
 function buildUpdateCard(u, isFirst) {
   const latestClass = isFirst ? ' latest' : '';
   const openClass   = u.open  ? ' open'   : '';
@@ -283,7 +295,6 @@ function buildUpdateCard(u, isFirst) {
 </div>`;
 }
 
-/** コマンドカテゴリひとつ分の HTML を返す */
 function buildCommandCategory(cat) {
   const cards = cat.entries.map(cmd => {
     const badge = cmd.badge
@@ -302,40 +313,33 @@ function buildCommandCategory(cat) {
 </div>`;
 }
 
-/* ═══════════════════════════════════════════
-   Main: fetch index.json and render
-═══════════════════════════════════════════ */
+/* ── Main: fetch & render ── */
 fetch('index.json')
   .then(r => r.json())
   .then(data => {
-    /* hero badge + footer version */
     document.getElementById('heroBadgeText').textContent = data.meta.hero_badge;
+    document.getElementById('statusVersion').textContent = data.meta.latest_version || '—';
     document.getElementById('footerCopy').textContent =
-      `© 2026 HGHome Official · ${data.meta.latest_version}`;
+      `© 2026 HGHOME OFFICIAL · ${data.meta.latest_version}`;
 
-    /* changelog */
     const changelogEl = document.getElementById('changelog-container');
     changelogEl.innerHTML = data.updates
       .map((u, i) => buildUpdateCard(u, i === 0))
       .join('');
 
-    /* commands */
     const commandsEl = document.getElementById('commands-container');
     commandsEl.innerHTML = data.commands
       .map(cat => buildCommandCategory(cat))
       .join('');
 
-    /* re-observe newly inserted fade-in elements */
     observeAll();
   })
   .catch(err => {
     console.error('index.json の読み込みに失敗しました:', err);
-    document.getElementById('heroBadgeText').textContent = '読み込みエラー';
+    document.getElementById('heroBadgeText').textContent = 'LOAD ERROR';
   });
 
-/* 静的な fade-in 要素（ロードマップ等）も監視開始 */
 observeAll();
 </script>
-
 </body>
 </html>
