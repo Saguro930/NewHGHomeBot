@@ -1,0 +1,374 @@
+{
+  "meta": {
+    "latest_version": "v1.1.2",
+    "hero_badge": "v1.1.2 リリース済み"
+  },
+  "updates": [
+    {
+      "version": "v1.1.2", "badge": "new", "open": true,
+      "title": "リーダーボード ページ移動対応",
+      "sections": [
+        {
+          "heading": "/leaderboard — ページネーション追加",
+          "items": [
+            "◀ 前へ / 次へ ▶ ボタンで 10 件ずつページ移動が可能に",
+            "1〜10 位・11〜20 位… と無制限にスクロール可能",
+            "フッターに「ページ X（N〜M 位）」を表示",
+            "120 秒無操作でボタンを自動無効化",
+            "Firestore の offset 非対応を <code>limit + Python スライス</code> で回避"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v1.1.1", "badge": "new", "open": false,
+      "title": "ボイスチャンネル 専用レベル追加",
+      "sections": [
+        {
+          "heading": "ボイス XP / ボイスレベルシステム",
+          "items": [
+            "VC 滞在時間に応じて <strong>ボイス専用 XP</strong> を付与（1 分あたり 10 XP）",
+            "メッセージレベルとは独立した <strong>ボイスレベル</strong> を実装",
+            "ボイスレベルアップ時に 🎙️ 専用 embed で通知",
+            "AFK チャンネルは対象外・1 分未満は付与なし・最大 60 分 / セッション",
+            "週末ボーナス（×2）はボイス XP にも適用",
+            "ボイス XP は日次レポート（<code>daily_xp</code>）に含めない設計",
+            "/rank でメッセージ Lv・ボイス Lv・各進捗バーを並列表示",
+            "/rank で VC 参加中の場合は経過時間をリアルタイム表示"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v1.1.0", "badge": "", "open": false,
+      "title": "Workシステム刷新・銀行利子・プロフィール強化",
+      "sections": [
+        {
+          "heading": "X 通知 — 大量送信バグ修正",
+          "items": [
+            "Bot 再起動直後に既読済みツイートが一斉送信されるバグを修正",
+            "初回登録時に <code>last_tweet_id</code> が正しく保存されない問題を解消"
+          ]
+        },
+        {
+          "heading": "Work システム — 全面刷新",
+          "items": [
+            "<strong>職業システム追加</strong> — レベルに応じて職業が解放・昇格。職業ごとに基本給・ボーナス係数が異なる",
+            "<strong>ランダムイベント追加</strong> — 労働時にボーナス・ペナルティ・特別報酬などのランダムイベントが発生",
+            "<strong>連続労働ストリーク</strong> — 毎日 /work を続けると連続日数に応じてボーナス倍率が上昇。途切れるとリセット",
+            "<strong>累計獲得コイン記録</strong> — /work で稼いだコインの累計を Firestore に記録。/profile で確認可能"
+          ]
+        },
+        {
+          "heading": "銀行 — 日利 1% 利子追加",
+          "items": [
+            "銀行に預けたコインに毎日 JST 0時で <strong>1% の利子</strong> が付く",
+            "利子は自動付与。次のログイン時または /balance 確認時に反映",
+            "利子計算は最終ログイン日から経過日数分をまとめて付与（複利）"
+          ]
+        },
+        {
+          "heading": "プロフィール — デザイン強化",
+          "items": [
+            "職業・ストリーク日数・累計労働コインを新たに表示",
+            "銀行残高と所持コインを並列レイアウトで見やすく整理",
+            "借金時の赤色警告をより目立つデザインに変更",
+            "Embed カラーをレベル帯に応じてグラデーション変化"
+          ]
+        },
+        {
+          "heading": "カウント機能 — システム改善",
+          "items": [
+            "<strong>高度な数式入力対応</strong> — <code>+</code> <code>-</code> <code>*</code> <code>/</code> <code>%</code> に加え、<code>^</code> / <code>**</code>（べき乗）および <code>√</code>（平方根）をサポート",
+            "<strong>安全な数式評価</strong> — AST ベースの安全な演算処理を採用し、不正なコード実行を完全防止",
+            "<strong>統計システム追加</strong> — 成功数・失敗数・個人別成績を自動記録",
+            "<strong>MVP / 戦犯 判定</strong> — 成功回数最多ユーザーを MVP、失敗回数最多ユーザーを戦犯として自動選出",
+            "<strong>/countstatus コマンド</strong> — 現在の数・総計・MVP・戦犯・自分の成績を一括表示",
+            "<strong>連続投稿対策強化</strong> — 同一ユーザーの連続投稿を検知し、自動リセット＆戦犯カウント"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v1.0.0", "badge": "", "open": false,
+      "title": "メジャーアップデート・サイトリニューアル・各種機能強化",
+      "sections": [
+        {
+          "heading": "サイト全面リニューアル",
+          "items": [
+            "サイトを全面リニューアル。HTML / CSS を完全分離（index.html + style.css）",
+            "ダークモード / ホワイトモード切り替え機能を追加。設定はブラウザに保存（localStorage）",
+            "ナビバーにトグルスイッチ＋絵文字（🌙 / ☀️）を設置。デフォルトはダークモード",
+            "背景に3層の放射グラデーション mesh を追加し、全体的な視覚演出を強化",
+            "ヒーロータイトルをグラデーションテキスト化（blue → indigo → violet）"
+          ]
+        },
+        {
+          "heading": "コマンド一覧をカテゴリ別に分類",
+          "items": [
+            "🛡 管理者限定 — /set-channel・/timeout・/kick・/ban・/role・/role-button・X系",
+            "🪙 コイン・カジノ — /balance・/profile・/top・/work・/steal・/bonus・各ゲーム",
+            "✦ その他 — /help・/rank・/leaderboard・/ping・@メンション"
+          ]
+        },
+        {
+          "heading": "X 通知 — fxtwitter 対応",
+          "items": [
+            "X 通知の URL 変換に <strong>fxtwitter</strong>（fixupx.com）を新たに追加",
+            "/set-xnotifytype で embed / link / fxtwitter の3種類から選択可能に",
+            "fxtwitter モードでは Discord 上でツイート内容がより正確にプレビュー表示される"
+          ]
+        },
+        {
+          "heading": "カウント — メッセージ削除対応",
+          "items": [
+            "カウントチャンネルで不正なメッセージ（数字・式以外）を自動削除するように",
+            "間違ったカウントのメッセージも削除してチャンネルをクリーンに保つ",
+            "連続投稿制限（5回）によるリセット時も該当メッセージを削除"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v0.5.3", "badge": "", "open": false,
+      "title": "チャンネル設定コマンドを /set-channel に統合",
+      "sections": [
+        {
+          "heading": "コマンド整理・統合",
+          "items": [
+            "チャンネル設定系コマンドを <code>/set-channel type:</code> に一本化",
+            "<code>/set_count</code>・<code>/set_welcome</code>・<code>/set-x</code>・<code>/set-server</code>・<code>/set_xp_channel</code>・<code>/set-xpnews</code> を廃止",
+            "type は <strong>count / welcome / x / server / levelup / xpnews</strong> の 6 種類から選択",
+            "各 Cog（count・welcome・x_notifier・server・xp）から設定ロジックを分離・setchannel.py に集約",
+            "コマンド数を削減しつつ機能はそのまま維持"
+          ]
+        },
+        {
+          "heading": "使い方",
+          "items": [
+            "/set-channel type:count   channel:#ch → カウントチャンネル設定 &amp; カウントリセット",
+            "/set-channel type:welcome channel:#ch → 入退室通知チャンネル設定",
+            "/set-channel type:x       channel:#ch → X 通知チャンネル設定",
+            "/set-channel type:server  channel:#ch → 統計レポートチャンネル設定",
+            "/set-channel type:levelup channel:#ch → レベルアップ通知チャンネル設定",
+            "/set-channel type:xpnews  channel:#ch → XP ニュースチャンネル設定"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v0.5.1", "badge": "", "open": false,
+      "title": "サーバー統計 強化・週間 / 月間レポート追加",
+      "sections": [
+        {
+          "heading": "サーバー統計アップデート",
+          "items": [
+            "週間・月間サーバーレポートを自動送信",
+            "今週 / 今月で一番使われた絵文字ランキングを追加",
+            "1日あたりの平均メッセージ数を算出・表示",
+            "今週・今月で最もアクティブだった日を表示",
+            "リアクション統計を Top3 / Top5 形式で表示",
+            "既存のデイリーレポートとの互換性を維持"
+          ]
+        },
+        {
+          "heading": "内部改善",
+          "items": [
+            "日次データを基にした集計ロジックを共通化",
+            "週間・月間処理を同一コードで管理",
+            "Firebase 読み取り回数を最小化"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v0.5", "badge": "", "open": false,
+      "title": "カジノ大幅強化・Firebase最適化・/help刷新",
+      "sections": [
+        {
+          "heading": "カジノ コマンドデザイン リニューアル",
+          "images": { "type": "compare", "items": [
+            { "label": "Before", "src": "image/casino-old.jpeg", "alt": "旧カジノデザイン" },
+            { "label": "After",  "src": "image/casino-new.jpeg", "alt": "新カジノデザイン" }
+          ]},
+          "items": [
+            "全カジノコマンドの出力を discord.Embed に刷新",
+            "勝利・敗北・引き分けで色が変化（緑 / 赤 / グレー）",
+            "/balance コマンドを新たに追加（アバター付き残高表示）",
+            "ダイスの出目表示を絵文字（⚀〜⚅）に変更",
+            "最大ベット額（10,000,000コイン）の上限を設定"
+          ]
+        },
+        {
+          "heading": "ブラックジャック 追加",
+          "images": { "type": "single", "items": [
+            { "src": "image/blackjack.jpeg", "alt": "ブラックジャック" }
+          ]},
+          "items": [
+            "/blackjack コマンドを新規追加",
+            "Hit / Stand / Double の3択ボタン操作",
+            "ナチュラルブラックジャックは1.5倍払い（ベット×2.5）",
+            "ディーラーは17以上になるまで自動ドロー",
+            "引き分け時はベット返却、60秒無操作でボタン自動無効化",
+            "他ユーザーによるボタン操作を弾く処理を実装"
+          ]
+        },
+        {
+          "heading": "Firebase 無料枠 対策",
+          "items": [
+            "Firestore Transaction に移行し競合状態を解消",
+            "asyncio.to_thread でラップし非同期処理を正規化",
+            "不要な二重アクセスを削減、読み取り数を最小化",
+            "カジノコマンドのコイン操作を共通ヘルパーに集約"
+          ]
+        },
+        {
+          "heading": "/help コマンド 刷新 / /ping 追加",
+          "items": [
+            "カテゴリ別（管理 / カジノ / レベル / X通知 / その他）に整理",
+            "各コマンドに簡易説明と使用例を追記",
+            "/ping で応答速度を確認可能に"
+          ]
+        }
+      ]
+    },
+    {
+      "version": "v0.4.2", "badge": "", "open": false,
+      "title": "ロールコマンド刷新・remove追加",
+      "sections": [
+        { "heading": "", "items": [
+          "/giverole を /role type: に統合・刷新",
+          "type は give（付与）/ remove（削除）から選択",
+          "ロールの付与・削除をひとつのコマンドで管理できるように"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.4.1", "badge": "", "open": false,
+      "title": "X（Twitter）通知機能追加",
+      "sections": [
+        { "heading": "", "items": [
+          "Nitter RSS を利用した新着ポスト通知を実装（APIキー不要）",
+          "/set-xaccount username: で監視アカウントを追加・削除（トグル式）",
+          "/x-list で監視中アカウントと設定を一覧表示",
+          "5分ごとに自動チェック、複数インスタンスへのフォールバック対応",
+          "RT・リプライ・新規ポストを色分けで識別（embed モード）"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.4", "badge": "", "open": false,
+      "title": "管理強化・ロールボタン・サーバー統計",
+      "sections": [
+        { "heading": "管理コマンド", "items": ["/kick・/ban を追加。理由・削除日数の任意指定に対応"] },
+        { "heading": "ロール付与ボタン", "items": ["/role-button でボタン付きメッセージを投稿（トグル式・永続化対応）"] },
+        { "heading": "サーバー統計 / ボーナス統合", "items": [
+          "毎日 JST 0時に前日の統計を自動送信",
+          "/daily・/weekly・/monthly を /bonus type: に統合"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.3.1", "badge": "", "open": false,
+      "title": "カウント制限・/top リニューアル",
+      "sections": [
+        {
+          "heading": "カウント連続投稿制限",
+          "images": { "type": "single", "items": [{ "src": "image/count.jpeg", "alt": "カウント制限" }]},
+          "items": ["4回連続で投稿するとカウントが1にリセット"]
+        },
+        {
+          "heading": "/top コマンド リニューアル",
+          "images": { "type": "compare", "items": [
+            { "label": "Before", "src": "image/top-old.jpeg", "alt": "旧 /top" },
+            { "label": "After",  "src": "image/top-new.jpeg", "alt": "新 /top" }
+          ]},
+          "items": [
+            "◀ ▶ ボタンでランキング種別を切り替え可能に",
+            "逆所持金ランキング（ワースト）を追加",
+            "20秒無操作でボタンが自動無効化"
+          ]
+        },
+        { "heading": "コイン関連", "items": [
+          "/steal の罰金を「盗む予定だった金額の1/10」に変更",
+          "/profile で借金時に赤表示・警告を追加"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.3", "badge": "", "open": false,
+      "title": "ようこそ・カウント機能追加",
+      "sections": [
+        { "heading": "", "items": [
+          "ようこそ・さようならメッセージを追加",
+          "カウント機能の追加",
+          "銀行コマンドに all オプションを追加・手数料を削除"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.2", "badge": "", "open": false,
+      "title": "XP・カジノ機能実装",
+      "sections": [
+        { "heading": "", "items": [
+          "XPレベリング機能を実装",
+          "コイン・カジノ機能を追加",
+          "Monthly ボーナスを追加"
+        ]}
+      ]
+    },
+    {
+      "version": "v0.1", "badge": "", "open": false,
+      "title": "初期リリース",
+      "sections": [
+        { "heading": "", "items": [
+          "Youtube 検索機能",
+          "ロール付与・タイムアウト",
+          "チケット・ヘルプ機能"
+        ]}
+      ]
+    }
+  ],
+
+  "commands": [
+    {
+      "category": "admin", "label": "🛡 管理者限定",
+      "entries": [
+        { "name": "/set-channel type:", "desc": "各種チャンネルを一括設定（count / welcome / x / server / levelup / xpnews）", "badge": "NEW" },
+        { "name": "/set-xaccount",    "desc": "監視する X アカウントを追加・削除" },
+        { "name": "/set-xnotifytype", "desc": "X 通知の表示タイプを変更（embed / link）" },
+        { "name": "/x-list",          "desc": "監視中の X アカウント一覧を表示" },
+        { "name": "/timeout",         "desc": "ユーザーをタイムアウト" },
+        { "name": "/kick",            "desc": "ユーザーをキック（理由の任意指定可）" },
+        { "name": "/ban",             "desc": "ユーザーをBAN（削除日数の指定可）" },
+        { "name": "/role type:",      "desc": "ロールの付与・削除（give / remove）" },
+        { "name": "/role-button",     "desc": "ロール付与ボタン付きメッセージを投稿" }
+      ]
+    },
+    {
+      "category": "coin", "label": "🪙 コイン・カジノ",
+      "entries": [
+        { "name": "/balance",     "desc": "所持コイン残高をアバター付きで確認" },
+        { "name": "/profile",     "desc": "プロフィール・所持コイン確認" },
+        { "name": "/top",         "desc": "資産ランキング（◀ ▶ で種別切り替え）" },
+        { "name": "/work",        "desc": "働いてコインを獲得" },
+        { "name": "/steal",       "desc": "他ユーザーから盗む（失敗時は罰金）" },
+        { "name": "/bonus type:", "desc": "daily / weekly / monthly ボーナスを受け取る" },
+        { "name": "/cointoss",    "desc": "コイントスで勝負" },
+        { "name": "/slot",        "desc": "スロットで遊ぶ" },
+        { "name": "/dice",        "desc": "数字を予想して賭ける" },
+        { "name": "/blackjack",   "desc": "ブラックジャック（Hit / Stand / Double）" }
+      ]
+    },
+    {
+      "category": "other", "label": "✦ その他",
+      "entries": [
+        { "name": "/help",        "desc": "ヘルプを表示（カテゴリ別）" },
+        { "name": "/rank",        "desc": "自分または指定ユーザーのレベルを表示" },
+        { "name": "/leaderboard", "desc": "XPランキングをページ送りで表示", "badge": "NEW" },
+        { "name": "/ping",        "desc": "Bot の応答速度を確認" },
+        { "name": "@HGHomeBot+",  "desc": "AI にメンションして質問" }
+      ]
+    }
+  ]
+}
