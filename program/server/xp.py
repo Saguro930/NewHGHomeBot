@@ -10,12 +10,90 @@ VOICE_XP_PER_MINUTE = 10
 # 一度に付与するXPの上限（長時間放置対策）
 VOICE_XP_MAX_PER_SESSION = 600  # 最大60分相当
 
+PAGE_SIZE = 10  # 1ページあたりの表示件数
+
+
+# ── ページネーション用 View ────────────────────────────
+class LeaderboardView(discord.ui.View):
+    def __init__(self, cog: "XP", guild: discord.Guild, page: int = 0):
+        super().__init__(timeout=120)
+        self.cog   = cog
+        self.guild = guild
+        self.page  = page
+
+    async def _build_embed(self) -> tuple[discord.Embed, bool]:
+        """embedと「次ページがあるか」を返す"""
+        offset = self.page * PAGE_SIZE
+
+        # Firestore は offset 非対応なので limit(offset + PAGE_SIZE + 1) で取得してスライス
+        docs = list(
+            self.cog.db.collection("guilds")
+            .document(str(self.guild.id))
+            .collection("members")
+            .order_by("total_xp", direction="DESCENDING")
+            .limit(offset + PAGE_SIZE + 1)
+            .stream()
+        )
+        has_next  = len(docs) > offset + PAGE_SIZE
+        page_docs = docs[offset: offset + PAGE_SIZE]
+
+        embed = discord.Embed(
+            title=f"🏆 {self.guild.name} のXPランキング",
+            color=discord.Color.gold()
+        )
+        medals  = ["🥇", "🥈", "🥉"]
+        entries = []
+
+        for i, doc in enumerate(page_docs):
+            rank     = offset + i + 1
+            d        = doc.to_dict()
+            member   = self.guild.get_member(int(doc.id))
+            name     = member.display_name if member else f"退出済みユーザー ({doc.id})"
+            medal    = medals[rank - 1] if rank <= 3 else f"`#{rank}`"
+            level    = d.get("level",    0)
+            total_xp = d.get("total_xp", 0)
+            entries.append(f"{medal} **{name}** — Lv.{level} ({total_xp:,} XP)")
+
+        embed.description = "\n".join(entries) if entries else "データがありません。"
+        embed.set_footer(
+            text=f"ページ {self.page + 1}　"
+                 f"({offset + 1}〜{offset + len(page_docs)} 位)"
+        )
+        return embed, has_next
+
+    def _update_buttons(self, has_next: bool):
+        self.prev_button.disabled = self.page == 0
+        self.next_button.disabled = not has_next
+
+    async def send(self, interaction: discord.Interaction):
+        embed, has_next = await self._build_embed()
+        self._update_buttons(has_next)
+        await interaction.followup.send(embed=embed, view=self)
+
+    async def _refresh(self, interaction: discord.Interaction):
+        embed, has_next = await self._build_embed()
+        self._update_buttons(has_next)
+        await interaction.response.edit_message(embed=embed, view=self)
+
+    @discord.ui.button(label="◀ 前へ", style=discord.ButtonStyle.secondary, disabled=True)
+    async def prev_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page -= 1
+        await self._refresh(interaction)
+
+    @discord.ui.button(label="次へ ▶", style=discord.ButtonStyle.primary)
+    async def next_button(self, interaction: discord.Interaction, button: discord.ui.Button):
+        self.page += 1
+        await self._refresh(interaction)
+
+    async def on_timeout(self):
+        for item in self.children:
+            item.disabled = True
+
 
 class XP(commands.Cog):
     def __init__(self, bot, db):
         self.bot = bot
         self.db  = db
-        # ボイス入室時刻を記録する辞書  key: (guild_id, user_id) → datetime(JST)
         self._voice_join_times: dict[tuple[int, int], datetime] = {}
         self.daily_xp_report.start()
 
@@ -37,11 +115,15 @@ class XP(commands.Cog):
     async def get_user_data(self, guild_id, user_id):
         doc  = self.get_user_ref(guild_id, user_id).get()
         data = doc.to_dict() if doc.exists else {}
-        data.setdefault("xp",         0)
-        data.setdefault("level",      0)
-        data.setdefault("total_xp",   0)
-        data.setdefault("daily_xp",   0)
-        data.setdefault("daily_date", "")
+        data.setdefault("xp",             0)
+        data.setdefault("level",          0)
+        data.setdefault("total_xp",       0)
+        data.setdefault("daily_xp",       0)
+        data.setdefault("daily_date",     "")
+        # ── ボイス専用 ──
+        data.setdefault("voice_xp",       0)
+        data.setdefault("voice_level",    0)
+        data.setdefault("voice_total_xp", 0)
         return data
 
     async def set_user_data(self, guild_id, user_id, data):
@@ -92,11 +174,6 @@ class XP(commands.Cog):
         notify_channel: discord.TextChannel | None = None,
         multi: float = 1.0,
     ):
-        """
-        gained_xp を total_xp に加算してレベルを再計算する。
-        add_to_daily=False の場合は daily_xp を変更しない（ボイスXP用）。
-        notify_channel はレベルアップ通知の優先チャンネル（Noneなら設定チャンネル→フォールバック）。
-        """
         data      = await self.get_user_data(guild.id, member.id)
         data      = self._reset_daily_xp_if_needed(data)
         old_level = data["level"]
@@ -111,7 +188,6 @@ class XP(commands.Cog):
 
         await self.set_user_data(guild.id, member.id, data)
 
-        # レベルアップ通知
         if new_level > old_level:
             desc = f"{member.mention} が **レベル {new_level}** になりました！"
             if multi == 2.0:
@@ -131,8 +207,45 @@ class XP(commands.Cog):
             if channel_id:
                 dest = guild.get_channel(int(channel_id))
             if dest is None:
-                dest = notify_channel  # メッセージ受信チャンネル or None
+                dest = notify_channel
 
+            if dest:
+                await dest.send(embed=embed)
+
+    # ── ボイスXP付与（ボイス専用レベルを更新）────────────
+    async def _grant_voice_xp(
+        self,
+        guild: discord.Guild,
+        member: discord.Member,
+        gained_xp: int,
+        multi: float = 1.0,
+    ):
+        data            = await self.get_user_data(guild.id, member.id)
+        data            = self._reset_daily_xp_if_needed(data)
+        old_voice_level = data["voice_level"]
+
+        data["voice_total_xp"] += gained_xp
+        new_vlevel, new_vxp, _ = self.calc_level(data["voice_total_xp"])
+        data["voice_level"] = new_vlevel
+        data["voice_xp"]    = new_vxp
+
+        await self.set_user_data(guild.id, member.id, data)
+
+        if new_vlevel > old_voice_level:
+            desc = f"{member.mention} のボイスレベルが **レベル {new_vlevel}** になりました！"
+            if multi == 2.0:
+                desc += "\n🎊 週末ボーナスで獲得XPが **2倍** です！"
+
+            embed = discord.Embed(
+                title="🎙️ ボイスレベルアップ！",
+                description=desc,
+                color=discord.Color.teal()
+            )
+            embed.set_thumbnail(url=member.display_avatar.url)
+
+            guild_data = await self.get_guild_data(guild.id)
+            channel_id = guild_data.get("level_up_channel")
+            dest = guild.get_channel(int(channel_id)) if channel_id else None
             if dest:
                 await dest.send(embed=embed)
 
@@ -167,13 +280,11 @@ class XP(commands.Cog):
 
         key = (member.guild.id, member.id)
 
-        # ── 入室（新しくチャンネルに入った／AFKから通常チャンネルへ移動）──
         joined = (
             after.channel is not None
-            and not after.afk                          # AFKチャンネルは対象外
-            and (before.channel is None or before.afk) # 未入室 or AFKから
+            and not after.afk
+            and (before.channel is None or before.afk)
         )
-        # ── 退室（チャンネルを離れた／通常チャンネルからAFKへ移動）──
         left = (
             before.channel is not None
             and not before.afk
@@ -190,23 +301,20 @@ class XP(commands.Cog):
 
             minutes   = (datetime.now(JST) - join_time).total_seconds() / 60
             if minutes < 1:
-                return  # 1分未満は付与しない
+                return
 
             multi     = self.xp_multiplier()
             gained_xp = int(min(minutes, VOICE_XP_MAX_PER_SESSION / VOICE_XP_PER_MINUTE)
                             * VOICE_XP_PER_MINUTE * multi)
 
-            await self._grant_xp(
+            await self._grant_voice_xp(
                 guild=member.guild,
                 member=member,
                 gained_xp=gained_xp,
-                add_to_daily=False,   # ← 日次レポートには含めない
-                notify_channel=None,
                 multi=multi,
             )
 
     # ── 毎日0時にXPニュース送信 ───────────────────────────
-
     @tasks.loop(time=datetime.now(JST).replace(hour=0, minute=0, second=0, microsecond=0).timetz())
     async def daily_xp_report(self):
         yesterday  = datetime.now(JST) - timedelta(days=1)
@@ -218,7 +326,6 @@ class XP(commands.Cog):
             guild_data = await self.get_guild_data(guild.id)
             channel_id = guild_data.get("xpnews_channel")
 
-            # ── チャンネルが設定されていれば送信 ──
             if channel_id:
                 channel = guild.get_channel(int(channel_id))
                 if channel:
@@ -257,7 +364,6 @@ class XP(commands.Cog):
                         embed.set_footer(text="毎日0時に集計")
                         await channel.send(embed=embed)
 
-            # ── チャンネル設定に関わらず daily_xp はリセット ──
             all_docs = (
                 self.db.collection("guilds")
                 .document(str(guild.id))
@@ -289,16 +395,21 @@ class XP(commands.Cog):
         xp_needed  = self.xp_required(level)
         multi      = self.xp_multiplier()
 
-        filled = int((current_xp / xp_needed) * 20)
-        bar    = "█" * filled + "░" * (20 - filled)
+        filled   = int((current_xp / xp_needed) * 20)
+        bar      = "█" * filled + "░" * (20 - filled)
+
+        v_level  = data["voice_level"]
+        v_xp     = data["voice_xp"]
+        v_needed = self.xp_required(v_level)
+        v_filled = int((v_xp / v_needed) * 20)
+        v_bar    = "█" * v_filled + "░" * (20 - v_filled)
 
         rank_position = await self.get_rank_position(interaction.guild.id, total_xp)
 
-        # 現在ボイスチャンネルに入室中なら経過時間を表示
         key          = (interaction.guild.id, target.id)
         voice_status = ""
         if key in self._voice_join_times:
-            elapsed_min = int((datetime.now(JST) - self._voice_join_times[key]).total_seconds() / 60)
+            elapsed_min  = int((datetime.now(JST) - self._voice_join_times[key]).total_seconds() / 60)
             voice_status = f"🎙️ VC参加中（{elapsed_min}分経過）"
 
         embed = discord.Embed(
@@ -306,20 +417,27 @@ class XP(commands.Cog):
             color=discord.Color.blurple()
         )
         embed.set_thumbnail(url=target.display_avatar.url)
-        embed.add_field(name="🏅 サーバーランク", value=f"#{rank_position}", inline=True)
-        embed.add_field(name="⭐ レベル",         value=str(level),          inline=True)
-        embed.add_field(name="✨ 累計XP",         value=f"{total_xp:,}",     inline=True)
-        embed.add_field(name="📅 今日のXP",       value=f"{daily_xp:,}",     inline=True)
+        embed.add_field(name="🏅 サーバーランク", value=f"#{rank_position}",           inline=True)
+        embed.add_field(name="⭐ メッセージLv",   value=str(level),                    inline=True)
+        embed.add_field(name="🎙️ ボイスLv",       value=str(v_level),                  inline=True)
+        embed.add_field(name="✨ 累計XP",         value=f"{total_xp:,}",               inline=True)
+        embed.add_field(name="🔊 ボイス累計XP",   value=f"{data['voice_total_xp']:,}", inline=True)
+        embed.add_field(name="📅 今日のXP",       value=f"{daily_xp:,}",               inline=True)
         embed.add_field(
             name="🎊 XP倍率",
             value=f"**×{multi:.1f}**{'　🎉週末ボーナス中！' if multi == 2.0 else ''}",
             inline=True
         )
         if voice_status:
-            embed.add_field(name="ボイス", value=voice_status, inline=True)
+            embed.add_field(name="VC状態", value=voice_status, inline=True)
         embed.add_field(
-            name=f"XP進捗 ({current_xp} / {xp_needed})",
+            name=f"💬 メッセージXP進捗 ({current_xp} / {xp_needed})",
             value=f"`{bar}` {int(current_xp / xp_needed * 100)}%",
+            inline=False
+        )
+        embed.add_field(
+            name=f"🎙️ ボイスXP進捗 ({v_xp} / {v_needed})",
+            value=f"`{v_bar}` {int(v_xp / v_needed * 100)}%",
             inline=False
         )
         await interaction.response.send_message(embed=embed)
@@ -328,34 +446,8 @@ class XP(commands.Cog):
     @app_commands.command(name="leaderboard", description="サーバーのXPランキングを表示する")
     async def leaderboard(self, interaction: discord.Interaction):
         await interaction.response.defer()
-
-        docs = (
-            self.db.collection("guilds")
-            .document(str(interaction.guild.id))
-            .collection("members")
-            .order_by("total_xp", direction="DESCENDING")
-            .limit(10)
-            .stream()
-        )
-
-        embed   = discord.Embed(
-            title=f"🏆 {interaction.guild.name} のXPランキング",
-            color=discord.Color.gold()
-        )
-        medals  = ["🥇", "🥈", "🥉"]
-        entries = []
-
-        for i, doc in enumerate(docs):
-            d        = doc.to_dict()
-            member   = interaction.guild.get_member(int(doc.id))
-            name     = member.display_name if member else f"退出済みユーザー ({doc.id})"
-            medal    = medals[i] if i < 3 else f"`#{i+1}`"
-            level    = d.get("level",    0)
-            total_xp = d.get("total_xp", 0)
-            entries.append(f"{medal} **{name}** — Lv.{level} ({total_xp:,} XP)")
-
-        embed.description = "\n".join(entries) if entries else "まだデータがありません。"
-        await interaction.followup.send(embed=embed)
+        view = LeaderboardView(cog=self, guild=interaction.guild, page=0)
+        await view.send(interaction)
 
     # ── ランク順位取得（ヘルパー）────────────────────────
     async def get_rank_position(self, guild_id: int, total_xp: int) -> int:
