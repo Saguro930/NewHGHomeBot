@@ -267,6 +267,13 @@ class XP(commands.Cog):
             multi=multi,
         )
 
+    # ── AFK チャンネル判定ヘルパー ───────────────────────
+    def _is_afk(self, channel: discord.VoiceChannel | None, guild: discord.Guild) -> bool:
+        """チャンネルが AFK チャンネルかどうかを返す（未設定時は False）"""
+        if channel is None:
+            return False
+        return guild.afk_channel is not None and channel.id == guild.afk_channel.id
+
     # ── ボイスチャンネルXP ────────────────────────────────
     @commands.Cog.listener()
     async def on_voice_state_update(
@@ -278,18 +285,16 @@ class XP(commands.Cog):
         if member.bot:
             return
 
-        key = (member.guild.id, member.id)
+        guild = member.guild
+        key   = (guild.id, member.id)
 
-        joined = (
-            after.channel is not None
-            and not after.afk
-            and (before.channel is None or before.afk)
-        )
-        left = (
-            before.channel is not None
-            and not before.afk
-            and (after.channel is None or after.afk)
-        )
+        before_valid = before.channel is not None and not self._is_afk(before.channel, guild)
+        after_valid  = after.channel  is not None and not self._is_afk(after.channel,  guild)
+
+        # 有効 VC への入室（未参加 or AFK → 有効 VC）
+        joined = after_valid  and not before_valid
+        # 有効 VC からの退室（有効 VC → 未参加 or AFK）
+        left   = before_valid and not after_valid
 
         if joined:
             self._voice_join_times[key] = datetime.now(JST)
@@ -308,7 +313,7 @@ class XP(commands.Cog):
                             * VOICE_XP_PER_MINUTE * multi)
 
             await self._grant_voice_xp(
-                guild=member.guild,
+                guild=guild,
                 member=member,
                 gained_xp=gained_xp,
                 multi=multi,
