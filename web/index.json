@@ -4,23 +4,51 @@
     "hero_badge": "v1.1.3 リリース済み"
   },
   "updates": [
-    {    
+    {
       "version": "v1.1.3", "badge": "new", "open": true,
-      "title": "AIの切り替えを追加",
+      "title": "バトル・翻訳機能追加 / AI切り替え / Ping強化",
       "sections": [
+        {
+          "heading": "/battle — ユーザー間コイン賭け決闘システム追加",
+          "items": [
+            "/battle user: amount: で相手に決闘を申し込み、自動メンションで通知",
+            "承諾ボタン（相手にしか押せない）が押されるとバトル開始",
+            "通常攻撃 / 必殺技（発動率40%・失敗で反動） / 防御（次ダメージ50%カット） / 回復（2ターンに1回）の4択ボタン操作",
+            "ステータスはXPレベル・仕事レベル・窃盗レベルから自動計算。レベル差補正あり",
+            "2分間操作なしで最後に行動した側の不戦勝。10ターン経過で引き分け・ベット返却",
+            "勝利でバトル経験値+20・敗北でも+5。バトルレベルが上がるとATK・HPの基礎値が強化"
+          ]
+        },
+        {
+          "heading": "/translate — テキスト翻訳コマンド追加",
+          "items": [
+            "/translate text: language: で10言語（日英韓中仏独西露葡伊）に翻訳",
+            "言語は自動検出のため原文の言語を指定不要",
+            "国旗リアクション（🇯🇵🇺🇸🇰🇷🇨🇳🇫🇷🇩🇪🇪🇸🇷🇺🇵🇹🇮🇹）をつけると対応言語に自動翻訳",
+            "リアクション翻訳は元メッセージへの返信として投稿。同一メッセージへの多重翻訳を防止",
+            "powered by deep-translator（Google Translate）"
+          ]
+        },
+        {
+          "heading": "/ping — サーバー情報表示を強化",
+          "items": [
+            "CPU使用率をリアルタイム表示（🟢 50%未満 / 🟡 80%未満 / 🔴 以上）",
+            "システム全体のメモリ使用量（使用MB / 合計MB / 使用率%）を表示",
+            "Botプロセス単体のメモリ使用量（RSS）を表示",
+            "psutil を使用。Renderの無料プランでも動作"
+          ]
+        },
         {
           "heading": "/set-ai — 返答するAIの切り替え機能を追加",
           "items": [
-            "DuckDuckGoAIChatを使用",
+            "DuckDuckGo AI Chat を使用",
             "まだβです…"
           ]
         }
       ]
-    },     
-      
-  "updates": [
+    },
     {
-      "version": "v1.1.2", "badge": "", "open": true,
+      "version": "v1.1.2", "badge": "", "open": false,
       "title": "リーダーボード ページ移動対応",
       "sections": [
         {
@@ -349,15 +377,16 @@
     {
       "category": "admin", "label": "🛡 管理者限定",
       "entries": [
-        { "name": "/set-channel type:", "desc": "各種チャンネルを一括設定（count / welcome / x / server / levelup / xpnews）", "badge": "NEW" },
-        { "name": "/set-xaccount",    "desc": "監視する X アカウントを追加・削除" },
-        { "name": "/set-xnotifytype", "desc": "X 通知の表示タイプを変更（embed / link）" },
-        { "name": "/x-list",          "desc": "監視中の X アカウント一覧を表示" },
-        { "name": "/timeout",         "desc": "ユーザーをタイムアウト" },
-        { "name": "/kick",            "desc": "ユーザーをキック（理由の任意指定可）" },
-        { "name": "/ban",             "desc": "ユーザーをBAN（削除日数の指定可）" },
-        { "name": "/role type:",      "desc": "ロールの付与・削除（give / remove）" },
-        { "name": "/role-button",     "desc": "ロール付与ボタン付きメッセージを投稿" }
+        { "name": "/set-channel type:", "desc": "各種チャンネルを一括設定（count / welcome / x / server / levelup / xpnews）", "badge": "" },
+        { "name": "/set-ai type:",      "desc": "AIの種類を変更（openrouter / duckduckgo）", "badge": "NEW" },
+        { "name": "/set-xaccount",      "desc": "監視する X アカウントを追加・削除" },
+        { "name": "/set-xnotifytype",   "desc": "X 通知の表示タイプを変更（embed / link）" },
+        { "name": "/x-list",            "desc": "監視中の X アカウント一覧を表示" },
+        { "name": "/timeout",           "desc": "ユーザーをタイムアウト" },
+        { "name": "/kick",              "desc": "ユーザーをキック（理由の任意指定可）" },
+        { "name": "/ban",               "desc": "ユーザーをBAN（削除日数の指定可）" },
+        { "name": "/role type:",        "desc": "ロールの付与・削除（give / remove）" },
+        { "name": "/role-button",       "desc": "ロール付与ボタン付きメッセージを投稿" }
       ]
     },
     {
@@ -368,6 +397,7 @@
         { "name": "/top",         "desc": "資産ランキング（◀ ▶ で種別切り替え）" },
         { "name": "/work",        "desc": "働いてコインを獲得" },
         { "name": "/steal",       "desc": "他ユーザーから盗む（失敗時は罰金）" },
+        { "name": "/battle",      "desc": "コインを賭けてユーザーと決闘（4択ボタン操作）", "badge": "NEW" },
         { "name": "/bonus type:", "desc": "daily / weekly / monthly ボーナスを受け取る" },
         { "name": "/cointoss",    "desc": "コイントスで勝負" },
         { "name": "/slot",        "desc": "スロットで遊ぶ" },
@@ -380,9 +410,10 @@
       "entries": [
         { "name": "/help",        "desc": "ヘルプを表示（カテゴリ別）" },
         { "name": "/rank",        "desc": "自分または指定ユーザーのレベルを表示" },
-        { "name": "/leaderboard", "desc": "XPランキングをページ送りで表示", "badge": "NEW" },
-        { "name": "/ping",        "desc": "Bot の応答速度を確認" },
-        { "name": "@HGHomeBot+",  "desc": "AI にメンションして質問" }
+        { "name": "/leaderboard", "desc": "XPランキングをページ送りで表示" },
+        { "name": "/translate",   "desc": "テキストを10言語に翻訳。国旗リアクションでも自動翻訳", "badge": "NEW" },
+        { "name": "/ping",        "desc": "Bot の応答速度・CPU / メモリ使用率を確認", "badge": "UPD" },
+        { "name": "@HGHomeBot+",  "desc": "AI にメンションして質問（OpenRouter / DuckDuckGo 切替可）", "badge": "UPD" }
       ]
     }
   ]
