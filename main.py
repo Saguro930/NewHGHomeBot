@@ -31,7 +31,7 @@ async def setup(bot, db):
     from program.admin.admin import Admin
     from program.admin.rolebutton import RoleButton
     from program.ticket import Ticket
-    from program.help import Help
+    from program.other.help import Help
     from program.ai.ai import AIChat
     from program.coin.coin import Coin
     from program.coin.casino import Casino
@@ -46,9 +46,10 @@ async def setup(bot, db):
     from program.welcome import Welcome
     from program.server.server import Server
     from program.x import XNotifier
-    from program.ping import Ping
+    from program.other.ping import Ping
     from program.setchannel import SetChannel
-    from program.coin.battle import Battle 
+    from program.coin.battle import Battle
+    from program.other.translator import Translator
     
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -71,6 +72,7 @@ async def setup(bot, db):
     await bot.add_cog(Ping(bot))
     await bot.add_cog(SetChannel(bot, db))
     await bot.add_cog(Battle(bot, db))
+    await bot.add_cog(Translator(bot))
 
 async def run_bot():
     await setup(bot, db)
