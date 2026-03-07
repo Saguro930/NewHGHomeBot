@@ -7,3 +7,4 @@ openai>=1.0.0
 matplotlib
 feedparser
 duckduckgo-search
+psutil
