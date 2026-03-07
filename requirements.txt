@@ -8,3 +8,4 @@ matplotlib
 feedparser
 duckduckgo-search
 psutil
+deep-translator
