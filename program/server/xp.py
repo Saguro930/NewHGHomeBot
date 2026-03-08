@@ -111,7 +111,6 @@ class XP(commands.Cog):
         return self.db.collection("guilds").document(str(guild_id))
 
     async def get_user_data(self, guild_id, user_id) -> dict:
-        # [FIX 3] Firestore同期呼び出しを別スレッドへ
         doc  = await asyncio.to_thread(self.get_user_ref(guild_id, user_id).get)
         data = doc.to_dict() if doc.exists else {}
         data.setdefault("xp",             0)
@@ -125,7 +124,6 @@ class XP(commands.Cog):
         return data
 
     async def set_user_data(self, guild_id, user_id, data: dict):
-        # [FIX 3] 同上
         await asyncio.to_thread(
             self.get_user_ref(guild_id, user_id).set, data, {"merge": True}
         )
@@ -172,7 +170,6 @@ class XP(commands.Cog):
         add_to_daily:   bool,
         notify_channel: discord.TextChannel | None = None,
         multi:          float = 1.0,
-        # ボイスXP専用フィールドも同時更新するか
         voice_xp_gain:  int = 0,
     ):
         data      = await self.get_user_data(guild.id, member.id)
@@ -187,7 +184,6 @@ class XP(commands.Cog):
         data["level"] = new_level
         data["xp"]    = current_xp
 
-        # [FIX 1] ボイスXPも同じトランザクションでまとめて保存
         old_voice_level = data["voice_level"]
         if voice_xp_gain > 0:
             data["voice_total_xp"] += voice_xp_gain
@@ -228,7 +224,7 @@ class XP(commands.Cog):
             return False
         return guild.afk_channel is not None and channel.id == guild.afk_channel.id
 
-    # ── メッセージ受信でXP付与 ────────────────────────────────────
+    # ── メッセージXP付与（通常チャンネル＋フォーラム返信）──────────
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
         if message.author.bot or not message.guild:
@@ -243,6 +239,40 @@ class XP(commands.Cog):
             gained_xp=gained_xp,
             add_to_daily=True,
             notify_channel=message.channel,
+            multi=multi,
+        )
+
+    # ── フォーラム新規投稿XP（スレッド作成時の最初のメッセージ）──────
+    # on_message はフォーラムの最初の投稿（スターターメッセージ）を
+    # 拾わないため、on_thread_create で別途処理する。
+    @commands.Cog.listener()
+    async def on_thread_create(self, thread: discord.Thread):
+        # フォーラムチャンネルのスレッドのみ対象
+        if not isinstance(thread.parent, discord.ForumChannel):
+            return
+        if thread.guild is None:
+            return
+
+        # スターターメッセージを取得（キャッシュになければ fetch）
+        starter = thread.starter_message
+        if starter is None:
+            try:
+                starter = await thread.fetch_message(thread.id)
+            except discord.NotFound:
+                return
+
+        if starter is None or starter.author.bot:
+            return
+
+        multi     = self.xp_multiplier()
+        gained_xp = int(self.calc_gained_xp(starter.content) * multi)
+
+        await self._grant_xp(
+            guild=thread.guild,
+            member=starter.author,
+            gained_xp=gained_xp,
+            add_to_daily=True,
+            notify_channel=thread,
             multi=multi,
         )
 
@@ -281,26 +311,23 @@ class XP(commands.Cog):
         if minutes < 1:
             return
 
-        # [FIX 4] エラーハンドリングを追加
         try:
             multi        = self.xp_multiplier()
             capped_min   = min(minutes, VOICE_XP_MAX_PER_SESSION / VOICE_XP_PER_MINUTE)
             voice_gained = int(capped_min * VOICE_XP_PER_MINUTE * multi)
 
-            # [FIX 1] ボイスXPをメインXPにも加算（_grant_xp に統合）
             await self._grant_xp(
                 guild=guild,
                 member=member,
-                gained_xp=voice_gained,      # total_xp / level にも反映
+                gained_xp=voice_gained,
                 add_to_daily=True,
                 multi=multi,
-                voice_xp_gain=voice_gained,  # voice_total_xp / voice_level にも反映
+                voice_xp_gain=voice_gained,
             )
         except Exception as e:
             print(f"[XP] ボイスXP付与エラー ({member} in {guild}): {e}")
 
     # ── 毎日0時にXPニュース送信 ───────────────────────────────────
-    # [FIX 2] datetime.now() をクラス定義時ではなく固定 time オブジェクトで指定
     @tasks.loop(time=dt_time(hour=0, minute=0, second=0, tzinfo=JST))
     async def daily_xp_report(self):
         yesterday  = datetime.now(JST) - timedelta(days=1)
