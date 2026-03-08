@@ -324,12 +324,13 @@ class Server(commands.Cog):
     def _build_day_series(
         self, daily_data: dict, days: int, current_count: int
     ) -> tuple[list, list, list]:
-        """日単位：過去 days 日分のラベル・メッセージ数・メンバー数を返す"""
+        """日単位：過去 days 日分のラベル・メッセージ数・メンバー数を返す（今日は除外）"""
         today = datetime.now(JST).date()
+        # i=days（days日前）〜 i=1（昨日）— 集計中の今日(i=0)は除外
         dates  = [(today - timedelta(days=i)).strftime("%Y-%m-%d")
-                  for i in range(days - 1, -1, -1)]
+                  for i in range(days, 0, -1)]
         labels = [(today - timedelta(days=i)).strftime("%m/%d")
-                  for i in range(days - 1, -1, -1)]
+                  for i in range(days, 0, -1)]
         msgs   = [daily_data.get(d, {}).get("msg", 0) for d in dates]
         counts = self._reconstruct_counts(daily_data, dates, current_count)
         return labels, msgs, counts
