@@ -1,3 +1,4 @@
+import asyncio
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -33,56 +34,36 @@ FULLWIDTH_MAP = str.maketrans({
 })
 
 def normalize_input(s: str) -> str:
-    # 全角→半角等の基本正規化、空白は残す（後で削る）
     return s.translate(FULLWIDTH_MAP)
 
 # =============================
 # 前処理：^ -> ** , √ を sqrt(...) にする等
-# より頑健な処理を行う（例：√9 -> sqrt(9) , √(4+5) -> sqrt(4+5)）
 # =============================
 def preprocess(expr: str) -> str:
     expr = normalize_input(expr)
     expr = expr.replace("^", "**")
-
-    # '√' を 'sqrt' に置換して、数値直後の場合は括弧で囲む
-    # 例: sqrt9 -> sqrt(9)
-    # 例: sqrt( ... ) はそのまま
     expr = expr.replace("√", "sqrt")
-
-    # sqrt followed by digits (possibly with spaces): sqrt  9  -> sqrt(9)
     expr = re.sub(r"sqrt\s*(\d+(\.\d+)?)", lambda m: f"sqrt({m.group(1)})", expr)
-
-    # sqrt( はそのまま。これ handles sqrt( ... )
-    # 不要な空白を削除（演算子間の空白は気にしないため全体で strip）
     expr = expr.strip()
     return expr
 
 # =============================
 # 安全 eval（ASTベース）
-# - 許可されたノードだけ評価
-# - sqrt() は許可（引数は評価してから math.sqrt）
-# - 結果は int にキャスト（小数は切り捨て）
 # =============================
 def safe_eval(expr: str) -> int | None:
     try:
         expr = preprocess(expr)
-        # セーフチェック：allow only characters we expect after preprocess
         if not re.fullmatch(r"[0-9+\-*/%^().sqrt\s*]+", expr):
-            # ここでは sqrt が入った文字列も許可
-            # ただし念のため厳しく弾く（アルファベット等は 'sqrt' のみ許可）
-            # 例外ではなく None を返して静かに無視する運用にしている
             return None
 
         node = ast.parse(expr, mode="eval").body
         val = _eval_node(node)
-        # 最終的に整数で扱う（小数は切り捨て）
         return int(val)
     except Exception as e:
         logger.debug("safe_eval failed for %r: %s", expr, e, exc_info=True)
         return None
 
 def _eval_node(node):
-    # 数値リテラル (Pythonバージョンに合わせて対応)
     if isinstance(node, ast.Constant):
         if isinstance(node.value, (int, float)):
             return node.value
@@ -90,22 +71,16 @@ def _eval_node(node):
     if isinstance(node, ast.Num):  # Python <=3.10
         return node.n
 
-    # 単項演算子（負号）
     if isinstance(node, ast.UnaryOp) and isinstance(node.op, ast.USub):
         return -_eval_node(node.operand)
 
-    # 二項演算
     if isinstance(node, ast.BinOp) and type(node.op) in OPERATORS:
         left = _eval_node(node.left)
         right = _eval_node(node.right)
-        # 防御: rightが0での除算などが来た場合は例外させる
         return OPERATORS[type(node.op)](left, right)
 
-    # 関数呼び出し（sqrt のみ許可）
     if isinstance(node, ast.Call):
-        # 形式: sqrt(<expr>)
         if isinstance(node.func, ast.Name) and node.func.id == "sqrt":
-            # 1引数のみ許可
             if len(node.args) != 1:
                 raise ValueError("sqrt takes exactly one argument")
             value = _eval_node(node.args[0])
@@ -122,7 +97,6 @@ def _eval_node(node):
 def get_mvp(user_stats: dict):
     if not user_stats:
         return None
-    # success が最大の user を返す
     uid, stats = max(user_stats.items(), key=lambda x: x[1].get("success", 0))
     return {"user_id": uid, "success_count": stats.get("success", 0)}
 
@@ -140,33 +114,36 @@ class Count(commands.Cog):
         self.bot = bot
         self.db = db
 
+    def _get_guild_ref(self, guild_id: int):
+        return self.db.collection("guilds").document(str(guild_id))
+
     # -----------------------------
     # メッセージ監視
     # -----------------------------
     @commands.Cog.listener()
     async def on_message(self, message: discord.Message):
-        # bot の発言は無視
         if message.author.bot or not message.guild:
             return
 
         try:
-            doc_ref = self.db.collection("guilds").document(str(message.guild.id))
-            doc = doc_ref.get()  # Firestore の同期 API を想定
+            doc_ref = self._get_guild_ref(message.guild.id)
+            # [FIX 2] ブロッキング Firestore 呼び出しを別スレッドで実行
+            doc = await asyncio.to_thread(doc_ref.get)
             if not doc.exists:
                 return
 
             data = doc.to_dict()
             count_channel = data.get("count_channel")
-            count = data.get("count", {})
 
-            if message.channel.id != count_channel:
+            # [FIX 1] count_channel が str で保存されている場合に int へ変換して比較
+            if not count_channel or message.channel.id != int(count_channel):
                 return
 
-            # 正規化：全角→半角、空白除去は safe_eval 前に行う
+            count = data.get("count", {})
+
             content_raw = message.content
             content = re.sub(r"\s+", "", normalize_input(content_raw))
 
-            # 許可する文字だけか（数字、演算子、括弧、√など）
             if not re.fullmatch(r"[0-9+\-*/%^().√]+", content):
                 return
 
@@ -174,7 +151,6 @@ class Count(commands.Cog):
             if value is None:
                 return
 
-            # 現在の状態を読み出し
             current = int(count.get("current", 1))
             recent_authors = count.get("recent_authors", [])
             user_stats = count.get("user_stats", {})
@@ -199,8 +175,8 @@ class Count(commands.Cog):
                     "mvp": get_mvp(user_stats),
                     "warcriminal": get_warcriminal(user_stats)
                 }
-                # Firestore の上書き（ここはトランザクションで扱うのが望ましい）
-                doc_ref.update({"count": new_count_obj})
+                # [FIX 2] 同上
+                await asyncio.to_thread(doc_ref.update, {"count": new_count_obj})
 
                 await message.add_reaction("🚫")
                 await message.channel.send(
@@ -227,7 +203,7 @@ class Count(commands.Cog):
                     "warcriminal": get_warcriminal(user_stats)
                 }
 
-                doc_ref.update({"count": new_count_obj})
+                await asyncio.to_thread(doc_ref.update, {"count": new_count_obj})
                 await message.add_reaction("✅")
             else:
                 user_stats[uid]["fail"] += 1
@@ -243,7 +219,7 @@ class Count(commands.Cog):
                     "warcriminal": get_warcriminal(user_stats)
                 }
 
-                doc_ref.update({"count": new_count_obj})
+                await asyncio.to_thread(doc_ref.update, {"count": new_count_obj})
                 await message.add_reaction("❌")
                 await message.channel.send(
                     f"❌ 間違い！正解は **{current}**\n"
@@ -251,7 +227,6 @@ class Count(commands.Cog):
                 )
 
         except Exception as e:
-            # ここで swallow せずログ出しておく
             logger.exception("on_message handler failed: %s", e)
 
     # -----------------------------
@@ -259,12 +234,13 @@ class Count(commands.Cog):
     # -----------------------------
     @commands.Cog.listener()
     async def on_message_delete(self, message: discord.Message):
-        # メッセージ削除後の通知（最新正解が消えたら知らせる）
         if not message.guild:
             return
 
         try:
-            doc = self.db.collection("guilds").document(str(message.guild.id)).get()
+            doc_ref = self._get_guild_ref(message.guild.id)
+            # [FIX 2] 同上
+            doc = await asyncio.to_thread(doc_ref.get)
             if not doc.exists:
                 return
 
@@ -282,11 +258,9 @@ class Count(commands.Cog):
     # -----------------------------
     @app_commands.command(name="countstatus", description="このサーバーのカウント統計を表示します")
     async def countstatus(self, interaction: discord.Interaction):
-        # Interaction は 3 秒以内の応答が必要 → DB等で時間かかる可能性があるため defer する
         try:
-            await interaction.response.defer()  # thinking
+            await interaction.response.defer()
         except Exception:
-            # defer に失敗しても続行して try で followup 送る
             logger.debug("defer failed; continuing", exc_info=True)
 
         try:
@@ -295,7 +269,9 @@ class Count(commands.Cog):
                 await interaction.followup.send("❌ サーバー内で実行してください", ephemeral=True)
                 return
 
-            doc = self.db.collection("guilds").document(str(guild.id)).get()
+            doc_ref = self._get_guild_ref(guild.id)
+            # [FIX 2] 同上
+            doc = await asyncio.to_thread(doc_ref.get)
             if not doc.exists:
                 await interaction.followup.send("📊 データがありません", ephemeral=True)
                 return
@@ -332,7 +308,6 @@ class Count(commands.Cog):
 
         except Exception as e:
             logger.exception("countstatus failed: %s", e)
-            # 可能ならユーザーにエラーメッセージを送る（非エフェメラル）
             try:
                 await interaction.followup.send("⚠️ 統計の読み込み中にエラーが発生しました。管理者にログを確認してください。")
             except Exception:
@@ -341,9 +316,5 @@ class Count(commands.Cog):
 # =============================
 # setup
 # =============================
-# NOTE: 環境によって setup シグネチャが異なるので既存の呼び出し方に合わせてください。
-# 例:
-#   await bot.add_cog(Count(bot, db))
-# または拡張機能として読み込む場合、db を bot に設定しておきます（例: bot.db = db）
 async def setup(bot: commands.Bot, db):
     await bot.add_cog(Count(bot, db))
