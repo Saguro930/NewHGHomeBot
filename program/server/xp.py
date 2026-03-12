@@ -124,9 +124,8 @@ class XP(commands.Cog):
         return data
 
     async def set_user_data(self, guild_id, user_id, data: dict):
-        await asyncio.to_thread(
-            self.get_user_ref(guild_id, user_id).set, data, {"merge": True}
-        )
+        ref = self.get_user_ref(guild_id, user_id)
+        await asyncio.to_thread(lambda: ref.set(data, merge=True))  # ✅ 修正
 
     async def get_guild_data(self, guild_id) -> dict:
         doc  = await asyncio.to_thread(self.get_guild_ref(guild_id).get)
@@ -389,10 +388,9 @@ class XP(commands.Cog):
                     )
                 )
                 for doc in all_docs:
+                    ref = self.get_user_ref(guild.id, doc.id)
                     await asyncio.to_thread(
-                        self.get_user_ref(guild.id, doc.id).set,
-                        {"daily_xp": 0, "daily_date": today},
-                        {"merge": True},
+                        lambda r=ref: r.set({"daily_xp": 0, "daily_date": today}, merge=True)  # ✅ 修正
                     )
 
             except Exception as e:
