@@ -167,6 +167,8 @@ class BlackjackView(discord.ui.View):
 
         if hand_total(self.player) > 21:
             await self.end_game(interaction, reason="bust")
+        elif total == 21:
+            await self.end_game(interaction, reason="stand")
         else:
             embed = self.build_embed()
             await interaction.response.edit_message(embed=embed, view=self)
