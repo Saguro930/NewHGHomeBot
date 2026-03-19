@@ -6,6 +6,6 @@ requests
 openai>=1.0.0
 matplotlib
 feedparser
-duckduckgo-search
+duckduckgo_search>=6.1.0
 psutil
 deep-translator
