@@ -13,6 +13,7 @@ SYSTEM_PROMPT = (
     "常に日本語でフレンドリーに回答してください。"
 )
 
+
 class AIChat(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
@@ -28,6 +29,12 @@ class AIChat(commands.Cog):
 
         # key: channel_id (int) → AI種別文字列
         self.channel_settings: dict[int, str] = {}
+
+        # ボットがAI返答として送信したメッセージのIDを記録するセット
+        # ようこそメッセージ等の「別機能が送ったボットメッセージ」への返信を無視するため
+        self.ai_reply_message_ids: set[int] = set()
+        # メモリ肥大化を防ぐ上限（古いIDは自動削除）
+        self.MAX_TRACKED_IDS = 500
 
     # --------------------------------------------------
     # スラッシュコマンド: /set-ai type:
@@ -81,6 +88,18 @@ class AIChat(commands.Cog):
             del hist[:len(hist) - max_entries]
 
     # --------------------------------------------------
+    # AI返答メッセージIDを記録（上限超えで古いIDを削除）
+    # --------------------------------------------------
+    def _track_ai_message(self, message_id: int):
+        self.ai_reply_message_ids.add(message_id)
+        # 上限を超えたら古い順に削除（setは順序なしなので一旦変換）
+        if len(self.ai_reply_message_ids) > self.MAX_TRACKED_IDS:
+            overflow = len(self.ai_reply_message_ids) - self.MAX_TRACKED_IDS
+            old_ids = sorted(self.ai_reply_message_ids)[:overflow]
+            for old_id in old_ids:
+                self.ai_reply_message_ids.discard(old_id)
+
+    # --------------------------------------------------
     # メッセージ受信時の処理
     # --------------------------------------------------
     @commands.Cog.listener()
@@ -90,12 +109,27 @@ class AIChat(commands.Cog):
 
         is_mention = self.bot.user in message.mentions
 
-        # リプライ先が実際にボット自身のメッセージかチェック
-        is_reply = (
-            message.reference is not None
-            and isinstance(message.reference.resolved, discord.Message)
-            and message.reference.resolved.author == self.bot.user
-        )
+        # ── リプライ判定 ──────────────────────────────────────
+        # 条件: リプライ先が「このCogがAI返答として送ったメッセージ」のみ
+        # ようこそメッセージ・通知など他機能のボットメッセージへの返信は無視する
+        is_reply = False
+        if message.reference is not None:
+            ref = message.reference.resolved
+            # resolved が None の場合（未キャッシュ）は fetch して確認
+            if ref is None:
+                try:
+                    ref = await message.channel.fetch_message(message.reference.message_id)
+                except (discord.NotFound, discord.HTTPException):
+                    ref = None
+
+            if (
+                ref is not None
+                and isinstance(ref, discord.Message)
+                and ref.author == self.bot.user
+                and ref.id in self.ai_reply_message_ids  # ← AI返答IDのみ反応
+            ):
+                is_reply = True
+        # ────────────────────────────────────────────────────
 
         if not is_mention and not is_reply:
             return
@@ -118,7 +152,7 @@ class AIChat(commands.Cog):
                 # ==========================================
                 if current_ai_type == "openrouter":
                     messages_for_ai = [
-                        {"role": "system", "content": SYSTEM_PROMPT},  # ← system ロールで分離
+                        {"role": "system", "content": SYSTEM_PROMPT},
                         *recent_history,
                         {"role": "user", "content": content},
                     ]
@@ -145,11 +179,14 @@ class AIChat(commands.Cog):
                 self._append_history(channel_id, content, ai_reply)
 
                 # Discord の文字数制限（2000字）に対応して分割送信
-                if len(ai_reply) > 2000:
-                    for i in range(0, len(ai_reply), 2000):
-                        await message.reply(ai_reply[i : i + 2000])
-                else:
-                    await message.reply(ai_reply)
+                # 先頭だけ元メッセージへのリプライ、続きは前のチャンクへのリプライにチェーン
+                chunks = [ai_reply[i: i + 2000] for i in range(0, len(ai_reply), 2000)]
+                last_sent: discord.Message = await message.reply(chunks[0])
+                self._track_ai_message(last_sent.id)
+
+                for chunk in chunks[1:]:
+                    last_sent = await last_sent.reply(chunk)
+                    self._track_ai_message(last_sent.id)
 
             except Exception as e:
                 print(f"AI Error ({current_ai_type}): {e}")
