@@ -1,4 +1,6 @@
 import os
+import logging
+import traceback
 import discord
 from discord.ext import commands
 from discord import app_commands
@@ -7,6 +9,8 @@ from openai import OpenAI
 from collections import defaultdict
 import asyncio
 from duckduckgo_search import DDGS
+
+logger = logging.getLogger(__name__)
 
 SYSTEM_PROMPT = (
     "あなたは親しみやすく優秀なAIアシスタントです。"
@@ -162,7 +166,15 @@ class AIChat(commands.Cog):
                         messages=messages_for_ai,
                         timeout=30.0,
                     )
+
+                    # モデルによっては content が None を返すことがある
                     ai_reply = response.choices[0].message.content
+                    if not ai_reply:
+                        finish_reason = response.choices[0].finish_reason
+                        raise ValueError(
+                            f"モデルから空の返答が返りました (finish_reason: {finish_reason})\n"
+                            f"モデル名が間違っているか、レート制限の可能性があります。"
+                        )
 
                 # ==========================================
                 # パターンB: DuckDuckGo
@@ -189,10 +201,14 @@ class AIChat(commands.Cog):
                     self._track_ai_message(last_sent.id)
 
             except Exception as e:
-                print(f"AI Error ({current_ai_type}): {e}")
+                # エラー内容をコンソールとDiscord両方に出力（原因特定のため）
+                import traceback
+                error_detail = traceback.format_exc()
+                print(f"AI Error ({current_ai_type}):\n{error_detail}")
                 await message.reply(
-                    "⚠️ AIエラーが発生しました。\n"
-                    "しばらく待ってからもう一度試してください。"
+                    f"⚠️ AIエラーが発生しました。\n"
+                    f"```\n{type(e).__name__}: {e}\n```\n"
+                    f"このメッセージをbotの管理者に共有してください。"
                 )
 
 
