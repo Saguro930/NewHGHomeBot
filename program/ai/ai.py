@@ -99,8 +99,13 @@ class AIChat(commands.Cog):
             + (f"これまでの会話:\n{history_text}\n" if history_text else "")
             + f"ユーザー: {latest}"
         )
-        with DDGS() as ddgs:
-            return ddgs.chat(prompt, model="gpt-4o-mini")
+        ddgs = DDGS()
+        if not hasattr(ddgs, "chat"):
+            raise RuntimeError(
+                "duckduckgo_search が古く chat() に対応していません。\n"
+                "`pip install -U duckduckgo_search` でアップグレードしてください。"
+            )
+        return ddgs.chat(prompt, model="gpt-4o-mini")
 
     # --------------------------------------------------
     # フォールバック付き呼び出し
