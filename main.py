@@ -3,8 +3,6 @@ print("🔥 main.py start")
 import os
 import discord
 from discord.ext import commands
-import asyncio
-import threading
 
 from data.firebase_init import init_firebase
 db = init_firebase()
@@ -15,7 +13,8 @@ intents = discord.Intents.default()
 intents.message_content = True
 intents.members = True
 intents.guilds = True
-intents.voice_states = True 
+intents.voice_states = True
+
 bot = commands.Bot(command_prefix="!", intents=intents)
 
 @bot.event
@@ -50,7 +49,7 @@ async def setup(bot, db):
     from program.setchannel import SetChannel
     from program.coin.battle import Battle
     from program.other.translator import Translator
-    
+
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
     await bot.add_cog(Help(bot))
@@ -66,30 +65,27 @@ async def setup(bot, db):
     await bot.add_cog(XP(bot, db))
     await bot.add_cog(Count(bot, db))
     await bot.add_cog(Welcome(bot, db))
-    await bot.add_cog(RoleButton(bot,db))
-    await bot.add_cog(Server(bot,db))
+    await bot.add_cog(RoleButton(bot, db))
+    await bot.add_cog(Server(bot, db))
     await bot.add_cog(XNotifier(bot, db))
     await bot.add_cog(Ping(bot))
     await bot.add_cog(SetChannel(bot, db))
     await bot.add_cog(Battle(bot, db))
     await bot.add_cog(Translator(bot))
 
-async def run_bot():
+async def main():
     await setup(bot, db)
     await bot.start(TOKEN)
 
-def start_bot():
-    """Discord Bot を別スレッドの asyncio ループで起動"""
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    loop.run_until_complete(run_bot())
-
 if __name__ == "__main__":
-    # ① Bot を別スレッドで起動
+    import threading
+
+    # Bot起動
     bot_thread = threading.Thread(target=start_bot, daemon=True)
     bot_thread.start()
 
-    # ② Flask をメインスレッドで起動（Render はここでポートを検出）
+    # keep_alive（Render用）
     from keep_alive import app
+    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
