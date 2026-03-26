@@ -1,6 +1,7 @@
 import discord
 from discord.ext import commands
 
+
 class TicketButton(discord.ui.View):
     def __init__(self):
         super().__init__(timeout=None)
@@ -23,20 +24,31 @@ class TicketButton(discord.ui.View):
         await channel.send(f"{user.mention} チケットが作成されました。担当者をお待ちください。")
         await interaction.response.send_message(f"チケットを作成しました: {channel.mention}", ephemeral=True)
 
+
 class Ticket(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
 
     @commands.hybrid_command(name="ticket_announce", description="チケット案内メッセージを送信")
-    async def ticket_announce(self, ctx):
+    @commands.has_permissions(administrator=True)
+    async def ticket_announce(self, ctx: commands.Context):
+        """チケット案内メッセージを送信（管理者のみ）"""
         embed = discord.Embed(
             title="🎫 チケット",
-            description="w質問・提案・報告がある場合はこちらから個別のチャンネルを作成してお知らせください。",
+            description="質問・提案・報告がある場合はこちらから個別のチャンネルを作成してお知らせください。",
             color=discord.Color.blurple()
         )
         embed.set_footer(text="チケットを作成するには下のボタンを押してください。")
         view = TicketButton()
+        await ctx.message.delete()
         await ctx.send(embed=embed, view=view)
 
+    @ticket_announce.error
+    async def ticket_announce_error(self, ctx: commands.Context, error: commands.CommandError):
+        if isinstance(error, commands.MissingPermissions):
+            await ctx.send("❌ このコマンドは管理者のみ使用できます。", delete_after=5)
+
+
 async def setup(bot):
+    bot.add_view(TicketButton())
     await bot.add_cog(Ticket(bot))
