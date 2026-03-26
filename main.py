@@ -1,6 +1,8 @@
 print("🔥 main.py start")
 
 import os
+import asyncio
+import threading
 import discord
 from discord.ext import commands
 
@@ -17,6 +19,9 @@ intents.voice_states = True
 
 bot = commands.Bot(command_prefix="!", intents=intents)
 
+# ------------------------
+# イベント
+# ------------------------
 @bot.event
 async def on_ready():
     print(f"✅ Logged in as {bot.user}")
@@ -26,7 +31,10 @@ async def on_ready():
     except Exception as e:
         print(f"❌ Sync error: {e}")
 
-async def setup(bot, db):
+# ------------------------
+# Cog読み込み
+# ------------------------
+async def setup():
     from program.admin.admin import Admin
     from program.admin.rolebutton import RoleButton
     from program.ticket import Ticket
@@ -73,19 +81,25 @@ async def setup(bot, db):
     await bot.add_cog(Battle(bot, db))
     await bot.add_cog(Translator(bot))
 
+# ------------------------
+# Bot起動
+# ------------------------
 async def main():
-    await setup(bot, db)
+    await setup()
     await bot.start(TOKEN)
 
-if __name__ == "__main__":
-    import threading
+def start_bot():
+    asyncio.run(main())
 
-    # Bot起動
+# ------------------------
+# 実行
+# ------------------------
+if __name__ == "__main__":
+    # Botを別スレッドで起動
     bot_thread = threading.Thread(target=start_bot, daemon=True)
     bot_thread.start()
 
-    # keep_alive（Render用）
+    # Flaskサーバー起動（Render用）
     from keep_alive import app
-    import os
     port = int(os.environ.get("PORT", 10000))
     app.run(host="0.0.0.0", port=port)
