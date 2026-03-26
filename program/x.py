@@ -20,6 +20,14 @@ NITTER_INSTANCES = [
 ]
 
 
+def normalize_entry_id(entry_id: str) -> str:
+    """Nitter インスタンスのドメインを x.com に正規化してIDを統一する"""
+    for instance in NITTER_INSTANCES:
+        if instance in entry_id:
+            return entry_id.replace(instance, "https://x.com")
+    return entry_id
+
+
 async def fetch_rss(username: str) -> tuple[list, dict]:
     loop = asyncio.get_event_loop()
     for instance in NITTER_INSTANCES:
@@ -93,16 +101,17 @@ class XNotifier(commands.Cog):
             if not entries:
                 continue
 
+            # ── 修正：IDを正規化して比較・保存する ──────────────────
             if not last_id:
                 self.x_col(guild.id).document(username).update({
-                    "last_tweet_id": entries[0].get("id", "")
+                    "last_tweet_id": normalize_entry_id(entries[0].get("id", ""))
                 })
                 continue
 
             to_notify = []
             found = False
             for entry in entries:
-                if entry.get("id", "") == last_id:
+                if normalize_entry_id(entry.get("id", "")) == last_id:
                     found = True
                     break
                 to_notify.append(entry)
@@ -125,7 +134,7 @@ class XNotifier(commands.Cog):
 
             if to_notify:
                 self.x_col(guild.id).document(username).update({
-                    "last_tweet_id": to_notify[0].get("id", "")
+                    "last_tweet_id": normalize_entry_id(to_notify[0].get("id", ""))
                 })
 
     # ── リンクのみ ────────────────────────────────────────────────
@@ -259,7 +268,7 @@ class XNotifier(commands.Cog):
 
             ref.set({
                 "username": username,
-                "last_tweet_id": entries[0].get("id", "")
+                "last_tweet_id": normalize_entry_id(entries[0].get("id", ""))
             })
             await interaction.followup.send(
                 f"✅ **@{username}** の通知を設定しました。",
