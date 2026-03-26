@@ -6,36 +6,148 @@ import asyncio
 
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 #  対応言語テーブル（/translate の choices に使用）
+#  ※ Discord の choices 上限は25件のため /translate は25言語まで
 # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 LANGUAGES = [
-    app_commands.Choice(name="🇯🇵 日本語",   value="ja"),
-    app_commands.Choice(name="🇺🇸 英語",     value="en"),
-    app_commands.Choice(name="🇰🇷 韓国語",   value="ko"),
-    app_commands.Choice(name="🇨🇳 中国語",   value="zh-CN"),
-    app_commands.Choice(name="🇫🇷 フランス語", value="fr"),
-    app_commands.Choice(name="🇩🇪 ドイツ語",  value="de"),
-    app_commands.Choice(name="🇪🇸 スペイン語", value="es"),
-    app_commands.Choice(name="🇷🇺 ロシア語",  value="ru"),
-    app_commands.Choice(name="🇵🇹 ポルトガル語", value="pt"),
-    app_commands.Choice(name="🇮🇹 イタリア語", value="it"),
+    app_commands.Choice(name="🇯🇵 日本語",         value="ja"),
+    app_commands.Choice(name="🇺🇸 英語",           value="en"),
+    app_commands.Choice(name="🇰🇷 韓国語",         value="ko"),
+    app_commands.Choice(name="🇨🇳 中国語(簡体)",   value="zh-CN"),
+    app_commands.Choice(name="🇹🇼 中国語(繁体)",   value="zh-TW"),
+    app_commands.Choice(name="🇫🇷 フランス語",     value="fr"),
+    app_commands.Choice(name="🇩🇪 ドイツ語",       value="de"),
+    app_commands.Choice(name="🇪🇸 スペイン語",     value="es"),
+    app_commands.Choice(name="🇷🇺 ロシア語",       value="ru"),
+    app_commands.Choice(name="🇵🇹 ポルトガル語",   value="pt"),
+    app_commands.Choice(name="🇮🇹 イタリア語",     value="it"),
+    app_commands.Choice(name="🇸🇦 アラビア語",     value="ar"),
+    app_commands.Choice(name="🇮🇳 ヒンディー語",   value="hi"),
+    app_commands.Choice(name="🇹🇭 タイ語",         value="th"),
+    app_commands.Choice(name="🇻🇳 ベトナム語",     value="vi"),
+    app_commands.Choice(name="🇮🇩 インドネシア語", value="id"),
+    app_commands.Choice(name="🇲🇾 マレー語",       value="ms"),
+    app_commands.Choice(name="🇳🇱 オランダ語",     value="nl"),
+    app_commands.Choice(name="🇵🇱 ポーランド語",   value="pl"),
+    app_commands.Choice(name="🇸🇪 スウェーデン語", value="sv"),
+    app_commands.Choice(name="🇳🇴 ノルウェー語",   value="no"),
+    app_commands.Choice(name="🇩🇰 デンマーク語",   value="da"),
+    app_commands.Choice(name="🇫🇮 フィンランド語", value="fi"),
+    app_commands.Choice(name="🇹🇷 トルコ語",       value="tr"),
+    app_commands.Choice(name="🇬🇷 ギリシャ語",     value="el"),
 ]
 
 # 言語コード → 表示名のマップ（Embed表示用）
 LANG_NAMES = {c.value: c.name for c in LANGUAGES}
 
-# 国旗絵文字 → 翻訳先言語コード
+# 国旗絵文字 → 翻訳先言語コード（リアクション翻訳用・25件制限なし）
 FLAG_TO_LANG: dict[str, str] = {
     "🇯🇵": "ja",
     "🇺🇸": "en",
+    "🇬🇧": "en",
     "🇰🇷": "ko",
     "🇨🇳": "zh-CN",
+    "🇹🇼": "zh-TW",
+    "🇭🇰": "zh-TW",
     "🇫🇷": "fr",
     "🇩🇪": "de",
     "🇪🇸": "es",
+    "🇲🇽": "es",
+    "🇦🇷": "es",
     "🇷🇺": "ru",
     "🇵🇹": "pt",
+    "🇧🇷": "pt",
     "🇮🇹": "it",
+    "🇸🇦": "ar",
+    "🇦🇪": "ar",
+    "🇪🇬": "ar",
+    "🇮🇳": "hi",
+    "🇹🇭": "th",
+    "🇻🇳": "vi",
+    "🇮🇩": "id",
+    "🇲🇾": "ms",
+    "🇳🇱": "nl",
+    "🇵🇱": "pl",
+    "🇸🇪": "sv",
+    "🇳🇴": "no",
+    "🇩🇰": "da",
+    "🇫🇮": "fi",
+    "🇹🇷": "tr",
+    "🇬🇷": "el",
+    "🇺🇦": "uk",
+    "🇨🇿": "cs",
+    "🇸🇰": "sk",
+    "🇷🇴": "ro",
+    "🇭🇺": "hu",
+    "🇧🇬": "bg",
+    "🇭🇷": "hr",
+    "🇷🇸": "sr",
+    "🇮🇱": "he",
+    "🇵🇭": "tl",
+    "🇧🇩": "bn",
+    "🇵🇰": "ur",
+    "🇮🇷": "fa",
+    "🇰🇿": "kk",
+    "🇺🇿": "uz",
+    "🇬🇪": "ka",
+    "🇦🇲": "hy",
+    "🇲🇳": "mn",
+    "🇱🇰": "si",
+    "🇲🇲": "my",
+    "🇰🇭": "km",
+    "🇵🇹": "pt",
+    "🇳🇵": "ne",
+    "🇦🇿": "az",
+    "🇱🇻": "lv",
+    "🇱🇹": "lt",
+    "🇪🇪": "et",
+    "🇮🇸": "is",
+    "🇲🇹": "mt",
+    "🇦🇫": "ps",
+    "🇲🇦": "ar",
+    "🇿🇦": "af",
+    "🇪🇹": "am",
+    "🇰🇪": "sw",
+    "🇳🇬": "yo",
 }
+
+# リアクション翻訳で使う言語名（flag_to_lang の値をカバー）
+_EXTRA_LANG_NAMES: dict[str, str] = {
+    "uk": "🇺🇦 ウクライナ語",
+    "cs": "🇨🇿 チェコ語",
+    "sk": "🇸🇰 スロバキア語",
+    "ro": "🇷🇴 ルーマニア語",
+    "hu": "🇭🇺 ハンガリー語",
+    "bg": "🇧🇬 ブルガリア語",
+    "hr": "🇭🇷 クロアチア語",
+    "sr": "🇷🇸 セルビア語",
+    "he": "🇮🇱 ヘブライ語",
+    "tl": "🇵🇭 フィリピン語",
+    "bn": "🇧🇩 ベンガル語",
+    "ur": "🇵🇰 ウルドゥー語",
+    "fa": "🇮🇷 ペルシャ語",
+    "kk": "🇰🇿 カザフ語",
+    "uz": "🇺🇿 ウズベク語",
+    "ka": "🇬🇪 ジョージア語",
+    "hy": "🇦🇲 アルメニア語",
+    "mn": "🇲🇳 モンゴル語",
+    "si": "🇱🇰 シンハラ語",
+    "my": "🇲🇲 ミャンマー語",
+    "km": "🇰🇭 クメール語",
+    "ne": "🇳🇵 ネパール語",
+    "az": "🇦🇿 アゼルバイジャン語",
+    "lv": "🇱🇻 ラトビア語",
+    "lt": "🇱🇹 リトアニア語",
+    "et": "🇪🇪 エストニア語",
+    "is": "🇮🇸 アイスランド語",
+    "mt": "🇲🇹 マルタ語",
+    "ps": "🇦🇫 パシュトー語",
+    "af": "🇿🇦 アフリカーンス語",
+    "am": "🇪🇹 アムハラ語",
+    "sw": "🇰🇪 スワヒリ語",
+    "yo": "🇳🇬 ヨルバ語",
+}
+# LANG_NAMES にマージ
+LANG_NAMES.update(_EXTRA_LANG_NAMES)
 
 
 def _do_translate(text: str, target: str) -> str:
@@ -43,17 +155,9 @@ def _do_translate(text: str, target: str) -> str:
     return GoogleTranslator(source="auto", target=target).translate(text)
 
 
-def _detect_lang(text: str) -> str:
-    """言語検出（翻訳時に source を auto にすれば内部で検出される）"""
-    # deep_translator は source="auto" で自動判定するため別途検出不要
-    return "auto"
-
-
 class Translator(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
-        # 翻訳済みメッセージのキャッシュ（同じメッセージへの多重翻訳を防ぐ）
-        # key: (message_id, target_lang), value: True
         self._translated_cache: set[tuple[int, str]] = set()
 
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -92,7 +196,6 @@ class Translator(commands.Cog):
     # ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
     @commands.Cog.listener()
     async def on_raw_reaction_add(self, payload: discord.RawReactionActionEvent):
-        # Bot 自身のリアクションは無視
         if payload.user_id == self.bot.user.id:
             return
 
@@ -101,17 +204,14 @@ class Translator(commands.Cog):
         if target_lang is None:
             return
 
-        # 同じメッセージ × 同じ言語への多重翻訳を防ぐ
         cache_key = (payload.message_id, target_lang)
         if cache_key in self._translated_cache:
             return
         self._translated_cache.add(cache_key)
 
-        # キャッシュが膨らみすぎないよう上限を設ける
         if len(self._translated_cache) > 500:
             self._translated_cache.clear()
 
-        # メッセージ・チャンネルを取得
         channel = self.bot.get_channel(payload.channel_id)
         if channel is None:
             return
@@ -121,16 +221,13 @@ class Translator(commands.Cog):
         except (discord.NotFound, discord.Forbidden):
             return
 
-        # 翻訳するテキストを決定（埋め込みがある場合は本文優先）
         text = message.content.strip()
         if not text:
-            # 本文がなければ Embed の description を試みる
             if message.embeds and message.embeds[0].description:
                 text = message.embeds[0].description.strip()
             else:
-                return   # 翻訳できるテキストなし
+                return
 
-        # 翻訳実行
         try:
             result = await asyncio.to_thread(_do_translate, text, target_lang)
         except Exception as e:
@@ -145,11 +242,11 @@ class Translator(commands.Cog):
         )
         embed.add_field(
             name="📝 原文",
-            value=f"```{text[:900]}```",   # Discord のフィールド上限対策
+            value=f"```{text[:900]}```",
             inline=False,
         )
         embed.add_field(
-            name=f"✅ 翻訳結果",
+            name="✅ 翻訳結果",
             value=f"```{result[:900]}```",
             inline=False,
         )
@@ -158,7 +255,6 @@ class Translator(commands.Cog):
                  f"　|　元メッセージ: {message.author.display_name}"
         )
 
-        # 元メッセージへの返信として送る
         try:
             await message.reply(embed=embed, mention_author=False)
         except discord.Forbidden:
