@@ -57,6 +57,7 @@ async def setup():
     from program.setchannel import SetChannel
     from program.coin.battle import Battle
     from program.other.translator import Translator
+    from program.other.anka import Anka
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -80,6 +81,7 @@ async def setup():
     await bot.add_cog(SetChannel(bot, db))
     await bot.add_cog(Battle(bot, db))
     await bot.add_cog(Translator(bot))
+    awair bot.add_cog(Anka(bot,db))
 
 # ------------------------
 # Bot起動
