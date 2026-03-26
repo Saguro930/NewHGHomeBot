@@ -200,6 +200,49 @@ class Server(commands.Cog):
                 data["reactions"][emoji] -= 1
         self._mark_dirty(reaction.message.guild.id)
 
+    # ─── !server コマンド ──────────────────────
+
+    @commands.command(name="server")
+    async def server_status(self, ctx: commands.Context):
+        """今日のサーバー統計を表示する"""
+        if not ctx.guild:
+            return
+
+        self._reset_cache_if_new_day(ctx.guild.id)
+        data = self._get_cache(ctx.guild.id)
+
+        today = self.today_str()
+        now = datetime.now(JST)
+
+        msg_count = data.get("message_count", 0)
+        join_count = data.get("member_join", 0)
+        leave_count = data.get("member_leave", 0)
+        reactions = data.get("reactions", {})
+
+        if reactions:
+            top3 = sorted(reactions.items(), key=lambda x: x[1], reverse=True)[:3]
+            top_emoji = "　".join(f"{e} {c}回" for e, c in top3)
+        else:
+            top_emoji = "なし"
+
+        embed = discord.Embed(
+            title="📊 本日のサーバー統計",
+            description=f"{today}（{now.strftime('%H:%M')} 時点）",
+            color=discord.Color.blurple(),
+            timestamp=now
+        )
+        embed.add_field(name="💬 メッセージ数", value=f"{msg_count} 件", inline=True)
+        embed.add_field(name="👥 メンバー数", value=f"{ctx.guild.member_count} 人", inline=True)
+        embed.add_field(
+            name="📥 参加 / 📤 退出",
+            value=f"+{join_count} / -{leave_count}",
+            inline=True
+        )
+        embed.add_field(name="🏅 リアクション Top3", value=top_emoji, inline=False)
+        embed.set_footer(text=ctx.guild.name, icon_url=ctx.guild.icon.url if ctx.guild.icon else None)
+
+        await ctx.send(embed=embed)
+
     # ─── 共通集計 ─────────────────────────────
 
     def aggregate_period(self, guild_id: int, days: int):
