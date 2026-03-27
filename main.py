@@ -59,6 +59,7 @@ async def setup():
     from program.other.translator import Translator
     from program.other.anka import Anka
     from program.summary_cog import SummaryCog
+    from program.search import Search
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -84,6 +85,7 @@ async def setup():
     await bot.add_cog(Translator(bot))
     await bot.add_cog(Anka(bot,db))
     await bot.add_cog(SummaryCog(bot))
+    await bot.add_cog(Search(bot))
 
 # ------------------------
 # Bot起動
