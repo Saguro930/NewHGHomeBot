@@ -10,3 +10,4 @@ duckduckgo_search
 psutil
 deep-translator
 python-dotenv
+yt-dlp
