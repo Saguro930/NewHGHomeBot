@@ -10,6 +10,48 @@ MAX_FILE_SIZE_MB = 8
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
 
+# ── yt-dlp 同期関数 ────────────────────────────────────────────────
+
+def _yt_search(query: str, max_results: int = 10) -> list[dict]:
+    ydl_opts = {
+        "quiet": True,
+        "no_warnings": True,
+        "extract_flat": True,
+        "skip_download": True,
+        "socket_timeout": 10,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
+        return info.get("entries", []) if info else []
+
+
+def _yt_download(url: str, output_path: str) -> dict:
+    ydl_opts = {
+        "outtmpl": output_path,
+        "format": (
+            "bestvideo[ext=mp4][filesize<7M]+bestaudio[ext=m4a]"
+            "/best[ext=mp4][filesize<7M]"
+            "/best[filesize<7M]"
+            "/best"
+        ),
+        "merge_output_format": "mp4",
+        "quiet": True,
+        "no_warnings": True,
+        "noplaylist": True,
+        "socket_timeout": 15,
+    }
+    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+        return ydl.extract_info(url, download=True)
+
+
+def _fmt_duration(duration) -> str:
+    if not duration:
+        return "不明"
+    h, rem = divmod(int(duration), 3600)
+    m, s   = divmod(rem, 60)
+    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
+
+
 # ── YouTube検索用ページネーション ──────────────────────────────────
 
 class YouTubeView(discord.ui.View):
@@ -36,13 +78,7 @@ class YouTubeView(discord.ui.View):
         view_count = r.get("view_count")
         thumbnail  = r.get("thumbnail", "")
 
-        if duration:
-            h, rem = divmod(int(duration), 3600)
-            m, s   = divmod(rem, 60)
-            duration_str = f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
-        else:
-            duration_str = "不明"
-
+        duration_str = _fmt_duration(duration)
         view_str = f"{view_count:,} 回" if view_count else "不明"
 
         embed = discord.Embed(title=vtitle, url=url, color=0xFF0000)
@@ -72,61 +108,40 @@ class YouTubeView(discord.ui.View):
             item.disabled = True
 
 
-# ── yt-dlp 同期関数 ────────────────────────────────────────────────
-
-def _yt_search(query: str, max_results: int = 10) -> list[dict]:
-    ydl_opts = {
-        "quiet": True,
-        "no_warnings": True,
-        "extract_flat": True,
-        "skip_download": True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        info = ydl.extract_info(f"ytsearch{max_results}:{query}", download=False)
-        return info.get("entries", [])
-
-
-def _yt_download(url: str, output_path: str) -> dict:
-    ydl_opts = {
-        "outtmpl": output_path,
-        "format": (
-            "bestvideo[ext=mp4][filesize<7M]+bestaudio[ext=m4a]"
-            "/best[ext=mp4][filesize<7M]"
-            "/best[filesize<7M]"
-            "/best"
-        ),
-        "merge_output_format": "mp4",
-        "quiet": True,
-        "no_warnings": True,
-        "noplaylist": True,
-    }
-    with yt_dlp.YoutubeDL(ydl_opts) as ydl:
-        return ydl.extract_info(url, download=True)
-
-
-def _fmt_duration(duration) -> str:
-    if not duration:
-        return "不明"
-    h, rem = divmod(int(duration), 3600)
-    m, s   = divmod(rem, 60)
-    return f"{h}:{m:02d}:{s:02d}" if h else f"{m}:{s:02d}"
-
-
 # ── Cog ───────────────────────────────────────────────────────────
 
 class YouTube(commands.Cog):
     def __init__(self, bot: commands.Bot):
         self.bot = bot
 
+    async def cog_load(self):
+        # 起動時にバックグラウンドで yt-dlp を初期化しておく（初回遅延を防ぐ）
+        await asyncio.to_thread(self._warmup)
+
+    @staticmethod
+    def _warmup():
+        try:
+            with yt_dlp.YoutubeDL({"quiet": True}) as _:
+                pass
+        except Exception:
+            pass
+
     # ── /youtube ──────────────────────────────────────────────────
 
     @app_commands.command(name="youtube", description="YouTubeを検索します")
     @app_commands.describe(title="検索キーワード")
     async def youtube(self, interaction: discord.Interaction, title: str):
+        # defer を最優先で呼ぶ（3秒タイムアウト対策）
         await interaction.response.defer()
 
         try:
-            results = await asyncio.to_thread(_yt_search, title)
+            results = await asyncio.wait_for(
+                asyncio.to_thread(_yt_search, title),
+                timeout=25.0
+            )
+        except asyncio.TimeoutError:
+            await interaction.followup.send("❌ 検索がタイムアウトしました。再度お試しください。")
+            return
         except Exception as e:
             await interaction.followup.send(f"❌ 検索に失敗しました: `{e}`")
             return
@@ -144,13 +159,20 @@ class YouTube(commands.Cog):
     @app_commands.command(name="download", description="動画URLをダウンロードしてDiscordに投稿します")
     @app_commands.describe(url="ダウンロードしたい動画のURL（YouTube・X など）")
     async def download(self, interaction: discord.Interaction, url: str):
+        # defer を最優先で呼ぶ
         await interaction.response.defer()
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "%(title)s.%(ext)s")
 
             try:
-                info = await asyncio.to_thread(_yt_download, url, output_path)
+                info = await asyncio.wait_for(
+                    asyncio.to_thread(_yt_download, url, output_path),
+                    timeout=60.0
+                )
+            except asyncio.TimeoutError:
+                await interaction.followup.send("❌ ダウンロードがタイムアウトしました。")
+                return
             except yt_dlp.utils.DownloadError as e:
                 await interaction.followup.send(f"❌ ダウンロードに失敗しました。\n```{e}```")
                 return
@@ -202,9 +224,14 @@ class YouTube(commands.Cog):
         interaction: discord.Interaction,
         error: app_commands.AppCommandError
     ):
-        await interaction.response.send_message(
-            f"❌ エラーが発生しました: `{error}`", ephemeral=True
-        )
+        if not interaction.response.is_done():
+            await interaction.response.send_message(
+                f"❌ エラーが発生しました: `{error}`", ephemeral=True
+            )
+        else:
+            await interaction.followup.send(
+                f"❌ エラーが発生しました: `{error}`", ephemeral=True
+            )
 
 
 async def setup(bot: commands.Bot):
