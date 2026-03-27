@@ -81,7 +81,7 @@ async def setup():
     await bot.add_cog(SetChannel(bot, db))
     await bot.add_cog(Battle(bot, db))
     await bot.add_cog(Translator(bot))
-    awair bot.add_cog(Anka(bot,db))
+    await bot.add_cog(Anka(bot,db))
 
 # ------------------------
 # Bot起動
