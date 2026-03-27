@@ -9,6 +9,12 @@ import tempfile
 MAX_FILE_SIZE_MB = 8
 MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024
 
+YOUTUBE_DOMAINS = ("youtube.com", "youtu.be", "www.youtube.com", "m.youtube.com")
+
+
+def _is_youtube(url: str) -> bool:
+    return any(d in url for d in YOUTUBE_DOMAINS)
+
 
 # ── yt-dlp 同期関数 ────────────────────────────────────────────────
 
@@ -76,7 +82,12 @@ class YouTubeView(discord.ui.View):
         channel    = r.get("channel", "不明")
         duration   = r.get("duration")
         view_count = r.get("view_count")
-        thumbnail  = r.get("thumbnail", "")
+
+        # サムネイルURLを最高解像度から順に試す
+        thumbnail = (
+            f"https://img.youtube.com/vi/{video_id}/maxresdefault.jpg"
+            if video_id else r.get("thumbnail", "")
+        )
 
         duration_str = _fmt_duration(duration)
         view_str = f"{view_count:,} 回" if view_count else "不明"
@@ -86,8 +97,11 @@ class YouTubeView(discord.ui.View):
         embed.add_field(name="⏱️ 再生時間",  value=duration_str, inline=True)
         embed.add_field(name="👁️ 再生回数",  value=view_str,     inline=True)
         embed.add_field(name="🔗 URL",       value=url,          inline=False)
+
+        # サムネイルを大きく表示
         if thumbnail:
-            embed.set_thumbnail(url=thumbnail)
+            embed.set_image(url=thumbnail)
+
         embed.set_footer(text=f"{self.index + 1} / {total}　|　🔍 {self.title}")
         return embed
 
@@ -115,13 +129,12 @@ class YouTube(commands.Cog):
         self.bot = bot
 
     async def cog_load(self):
-        # 起動時にバックグラウンドで yt-dlp を初期化しておく（初回遅延を防ぐ）
         await asyncio.to_thread(self._warmup)
 
     @staticmethod
     def _warmup():
         try:
-            with yt_dlp.YoutubeDL({"quiet": True}) as _:
+            with yt_dlp.YoutubeDL({"quiet": True}):
                 pass
         except Exception:
             pass
@@ -131,7 +144,6 @@ class YouTube(commands.Cog):
     @app_commands.command(name="youtube", description="YouTubeを検索します")
     @app_commands.describe(title="検索キーワード")
     async def youtube(self, interaction: discord.Interaction, title: str):
-        # defer を最優先で呼ぶ（3秒タイムアウト対策）
         await interaction.response.defer()
 
         try:
@@ -156,11 +168,28 @@ class YouTube(commands.Cog):
 
     # ── /download ─────────────────────────────────────────────────
 
-    @app_commands.command(name="download", description="動画URLをダウンロードしてDiscordに投稿します")
-    @app_commands.describe(url="ダウンロードしたい動画のURL（YouTube・X など）")
+    @app_commands.command(name="download", description="動画URLをダウンロードしてDiscordに投稿します（YouTube不可）")
+    @app_commands.describe(url="ダウンロードしたい動画のURL（X・TikTok・Instagram など）")
     async def download(self, interaction: discord.Interaction, url: str):
-        # defer を最優先で呼ぶ
         await interaction.response.defer()
+
+        # YouTubeはBot判定で弾かれるため事前に拒否
+        if _is_youtube(url):
+            embed = discord.Embed(
+                title="⚠️ YouTubeはダウンロード不可",
+                description=(
+                    "YouTubeはBot判定によりダウンロードがブロックされています。\n\n"
+                    "**対応しているサイト例：**\n"
+                    "・X (Twitter)\n"
+                    "・TikTok\n"
+                    "・Instagram\n"
+                    "・ニコニコ動画\n"
+                    "・その他1000以上のサイト"
+                ),
+                color=0xE74C3C
+            )
+            await interaction.followup.send(embed=embed)
+            return
 
         with tempfile.TemporaryDirectory() as tmpdir:
             output_path = os.path.join(tmpdir, "%(title)s.%(ext)s")
@@ -174,7 +203,14 @@ class YouTube(commands.Cog):
                 await interaction.followup.send("❌ ダウンロードがタイムアウトしました。")
                 return
             except yt_dlp.utils.DownloadError as e:
-                await interaction.followup.send(f"❌ ダウンロードに失敗しました。\n```{e}```")
+                err_str = str(e)
+                # Bot判定エラーの場合は分かりやすいメッセージを表示
+                if "Sign in" in err_str or "bot" in err_str.lower():
+                    await interaction.followup.send(
+                        "❌ このサイトはBot判定によりダウンロードがブロックされました。"
+                    )
+                else:
+                    await interaction.followup.send(f"❌ ダウンロードに失敗しました。\n```{err_str[:500]}```")
                 return
             except Exception as e:
                 await interaction.followup.send(f"❌ エラーが発生しました: `{e}`")
