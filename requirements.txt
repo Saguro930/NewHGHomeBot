@@ -11,3 +11,4 @@ psutil
 deep-translator
 python-dotenv
 yt-dlp
+Pillow
