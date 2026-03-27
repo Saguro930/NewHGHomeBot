@@ -60,6 +60,7 @@ async def setup():
     from program.other.anka import Anka
     from program.summary_cog import SummaryCog
     from program.search import Search
+    from program.other.youtube import YouTube
 
     await bot.add_cog(Admin(bot))
     await bot.add_cog(Ticket(bot))
@@ -86,6 +87,7 @@ async def setup():
     await bot.add_cog(Anka(bot,db))
     await bot.add_cog(SummaryCog(bot))
     await bot.add_cog(Search(bot))
+    await bot.add_cog(YouTube(bot))
 
 # ------------------------
 # Bot起動
