@@ -9,3 +9,4 @@ feedparser
 duckduckgo_search>=6.1.0
 psutil
 deep-translator
+python-dotenv
