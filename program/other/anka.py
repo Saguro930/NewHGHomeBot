@@ -74,10 +74,6 @@ class Anka(commands.Cog):
         if not session:
             return
 
-        # 安価主自身のメッセージはカウントしない
-        if message.author.id == session["host_id"]:
-            return
-
         session["current"] += 1
         remaining = session["count"] - session["current"]
 
